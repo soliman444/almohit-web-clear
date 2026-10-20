@@ -37,13 +37,13 @@ export function CinematicHero({
 
   return (
     <section className="sf-hero">
-      <link rel="preload" as="video" href="/heroes/home-motion.mp4?v=10433" type="video/mp4" />
+      <link rel="preload" as="video" href="/heroes/fresh-produce.mp4?v=10433" type="video/mp4" />
       <motion.div
         className="sf-hero-main"
         style={ready && !reduce ? { y: imageY, scale: imageScale } : undefined}
       >
         <HeroVideo
-          src="/heroes/home-motion.mp4?v=10433"
+          src="/heroes/fresh-produce.mp4?v=10433"
           poster={image ?? undefined}
           alt="Catalog opening"
           preset="campaign"

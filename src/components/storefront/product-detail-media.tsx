@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
 import type { DisplayCurrencyCode } from "../../config/currencies";
 import type { ProductShot } from "../../lib/catalog/media";
 import type { StorefrontProduct } from "../../lib/catalog/types";
+
 import { ProductGallery } from "./product-gallery";
 import { ProductInfoPanel } from "./product-info-panel";
 import { resolveSelectedVariant } from "./variant-picker";
@@ -28,16 +30,37 @@ export function ProductDetailMedia({
   error?: string;
 }) {
   const [selected, setSelected] = useState<Record<string, string>>({});
+
   const variant = resolveSelectedVariant(product, selected);
+
   const displayShots = useMemo(() => {
-    if (!variant?.imageUrl) return shots;
-    const lead: ProductShot = { src: variant.imageUrl, alt: variant.name, isolated: false };
-    return [lead, ...shots.filter((shot) => shot.src !== variant.imageUrl)];
+    if (!variant?.imageUrl) {
+      return shots;
+    }
+
+    const lead: ProductShot = {
+      src: variant.imageUrl,
+      alt: variant.name,
+      isolated: false,
+    };
+
+    return [
+      lead,
+      ...shots.filter((shot) => shot.src !== variant.imageUrl),
+    ];
   }, [shots, variant]);
 
   return (
     <>
-      <ProductGallery shots={displayShots} name={product.name} slug={product.slug} categorySlug={product.category.slug} />
+      <ProductGallery
+        shots={displayShots}
+        name={product.name}
+        slug={product.slug}
+        categorySlug={product.category.slug}
+        autoPlay={displayShots.length > 1}
+        autoPlayDelay={4500}
+      />
+
       <ProductInfoPanel
         product={product}
         currency={currency}
@@ -46,7 +69,10 @@ export function ProductDetailMedia({
         requestHref={requestHref}
         notice={notice}
         error={error}
-        selection={{ selected, onChange: setSelected }}
+        selection={{
+          selected,
+          onChange: setSelected,
+        }}
       />
     </>
   );

@@ -1,24 +1,18 @@
 import Link from "next/link";
-import { BrandMoment } from "../components/storefront/brand-moment";
-import { CampaignSplit } from "../components/storefront/campaign-split";
-import { CategoryMosaic } from "../components/storefront/category-mosaic";
+
 import { CinematicHero } from "../components/storefront/cinematic-hero";
+import { CategoryMosaic } from "../components/storefront/category-mosaic";
 import { FeaturedCollections } from "../components/storefront/featured-collections";
-import { HowItWorks } from "../components/storefront/how-it-works";
-import { ProductDiscovery } from "../components/storefront/product-discovery";
-import { ProductFinder } from "../components/storefront/product-finder";
-import { ProductRail } from "../components/storefront/product-rail";
 import { OffersSection } from "../components/storefront/promo-system";
-import { SourcingStory } from "../components/storefront/sourcing-story";
+import { ProductRail } from "../components/storefront/product-rail";
 import { StorefrontShell } from "../components/storefront/shell";
 import { WholesaleCta } from "../components/storefront/wholesale-cta";
+import { StorefrontUnavailable } from "../components/system/storefront-unavailable";
+
 import { fetchStorefrontCategoryCards } from "../lib/catalog/categories";
 import { fetchStorefrontProducts } from "../lib/catalog/products";
-import { safeApiCall } from "../lib/odoo/safe";
-import { StorefrontUnavailable } from "../components/system/storefront-unavailable";
 import { homeCatalogSlices } from "../lib/catalog/home";
-import { primaryImage } from "../lib/catalog/media";
-import { SHOT } from "../lib/content/shots";
+import { safeApiCall } from "../lib/odoo/safe";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +22,32 @@ export default async function HomePage() {
       fetchStorefrontProducts(),
       fetchStorefrontCategoryCards(),
     ]);
-    return { products: listed.items, productTotal: listed.pagination.total, categories };
+
+    return {
+      products: listed.items,
+      productTotal: listed.pagination.total,
+      categories,
+    };
   });
-  if (!catalog.ok) return <StorefrontUnavailable />;
-  const { products, productTotal, categories } = catalog.data;
+
+  if (!catalog.ok) {
+    return <StorefrontUnavailable />;
+  }
+
+  const {
+    products,
+    productTotal,
+    categories,
+  } = catalog.data;
+
   const home = homeCatalogSlices(products, categories);
-  const homeHero = categories.find((category) => category.slug === "basic-fruits" || category.slug === "fresh-produce") ?? home.roots[0];
+
+  const homeHero =
+    categories.find(
+      (category) =>
+        category.slug === "basic-fruits" ||
+        category.slug === "fresh-produce",
+    ) ?? home.roots[0];
 
   return (
     <StorefrontShell transparentHeader>
@@ -44,61 +58,97 @@ export default async function HomePage() {
         frameScale={homeHero?.heroScale}
       />
 
-      <section className="sf-section is-browse" id="discover">
-        <h2 className="sf-section-title">Shop by category</h2>
-        <p className="sf-heading-meta">
-          <span>{String(productTotal).padStart(2, "0")} products</span>
-          <span>{String(home.roots.length).padStart(2, "0")} collections</span>
-        </p>
+      <section
+        className="sf-section sf-home-categories"
+        id="discover"
+      >
+        <div className="sf-home-section-head">
+          <div>
+            <p className="sf-kicker">Catalog</p>
+            <h2 className="sf-section-title">
+              Shop by category
+            </h2>
+          </div>
+
+          <p className="sf-heading-meta">
+            {productTotal} products · {home.roots.length} collections
+          </p>
+        </div>
+
         <div className="sf-brand-options">
-          {home.roots.map((category) => (
-            <Link key={category.id} className="sf-pill" href={`/categories/${category.slug}`}>
+          {home.roots.slice(0, 6).map((category) => (
+            <Link
+              key={category.id}
+              className="sf-pill"
+              href={`/categories/${category.slug}`}
+            >
               {category.name}
-              {category.productCount > 0 ? ` · ${String(category.productCount).padStart(2, "0")}` : ""}
             </Link>
           ))}
-          <Link className="sf-pill" href="/products?availability=in-stock">Ready to supply</Link>
-          <Link className="sf-pill" href="/products?view=new">Just in</Link>
+
+          <Link
+            className="sf-pill"
+            href="/products"
+          >
+            View all
+          </Link>
         </div>
-        <CategoryMosaic categories={home.roots} variant="circle" />
-        <Link className="sf-text-link sf-more-link" href="/products">View all collections</Link>
+
+        <CategoryMosaic
+          categories={home.roots.slice(0, 6)}
+          variant="circle"
+        />
       </section>
 
-      {home.roots.length > 0 ? <FeaturedCollections categories={home.roots} /> : null}
-
-      <OffersSection promos={home.promos} />
-      <ProductRail
-        products={home.offerProducts}
-        index="04"
-        eyebrow="Trade offers"
-        title="Cases on offer this week."
-      />
-
-      <ProductDiscovery
-        bestSellers={home.bestSellers}
-        newArrivals={home.newArrivals}
-        offers={home.offerProducts.length ? home.offerProducts : home.bestSellers.slice(0, 3)}
-        promo={home.promos[0]}
-      />
-
-      {home.spotlight ? <CampaignSplit product={home.spotlight} /> : null}
-
-      {home.categoryRails.map((rail) => (
-        <ProductRail
-          key={rail.category.id}
-          products={rail.products}
-          index={rail.index}
-          eyebrow={rail.category.name}
-          title={`Shop ${rail.category.name}.`}
+      {home.roots.length > 0 ? (
+        <FeaturedCollections
+          categories={home.roots.slice(0, 3)}
         />
-      ))}
+      ) : null}
+
+      <ProductRail
+        products={
+          home.bestSellers.length
+            ? home.bestSellers.slice(0, 6)
+            : products.slice(0, 6)
+        }
+        index="03"
+        eyebrow="Selected"
+        title="Ready to supply."
+      />
+
+      <OffersSection
+        promos={home.promos.slice(0, 3)}
+      />
 
       {home.brands.length > 0 ? (
-        <section className="sf-section is-browse" id="brands">
-          <h2 className="sf-section-title">Shop by brand</h2>
+        <section
+          className="sf-section sf-home-brands"
+          id="brands"
+        >
+          <div className="sf-home-section-head">
+            <div>
+              <p className="sf-kicker">Brands</p>
+              <h2 className="sf-section-title">
+                Browse suppliers
+              </h2>
+            </div>
+
+            <Link
+              className="sf-text-link"
+              href="/products"
+            >
+              View catalog
+            </Link>
+          </div>
+
           <div className="sf-brand-options">
-            {home.brands.map((brand) => (
-              <Link key={brand.slug} className="sf-pill" href={`/products?brand=${brand.slug}`}>
+            {home.brands.slice(0, 8).map((brand) => (
+              <Link
+                key={brand.slug}
+                className="sf-pill"
+                href={`/products?brand=${brand.slug}`}
+              >
                 {brand.name}
               </Link>
             ))}
@@ -106,10 +156,6 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      <ProductFinder categories={home.roots} brands={home.brands} />
-      <BrandMoment src={home.spotlight ? primaryImage(home.spotlight)?.src : undefined} title="Seen before it is priced." />
-      <HowItWorks />
-      <SourcingStory src={SHOT.citrusMacro} />
       <WholesaleCta />
     </StorefrontShell>
   );

@@ -16,13 +16,13 @@ export function ProductRelated({ products }: { products: StorefrontProduct[] }) 
         {products.slice(0, 4).map((product, index) => (
           <motion.div
             key={product.id}
-            className={`sf-pdp-related-item${index === 0 ? " is-lead" : ""}`}
+            className={`sf-pdp-related-item`}
             initial={reduce ? false : { x: 22 }}
             whileInView={{ x: 0 }}
             viewport={{ once: true, amount: 0.2, margin: "60px" }}
             transition={{ duration: duration.reveal, ease, delay: index * 0.08 }}
           >
-            <ProductCard product={product} index={index} size={index === 0 ? "wide" : "default"} />
+            <ProductCard product={product} index={index} size="default" />
           </motion.div>
         ))}
       </div>
