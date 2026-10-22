@@ -21,9 +21,7 @@ export type CheckoutReady = {
   selected: AddressDto | null;
   paymentTerm: PaymentTerm | null;
   shippingAddresses: StorefrontAddress[];
-  invoiceAddresses: StorefrontAddress[];
   selectedShipping: StorefrontAddress | null;
-  selectedInvoice: StorefrontAddress | null;
 };
 
 export type CheckoutPageModel = CheckoutRedirect | CheckoutReady;
@@ -72,8 +70,11 @@ export function selectCheckoutAddress(addresses: AddressDto[], addressId?: strin
   return addresses.find((item) => item.id === addressId) ?? addresses.find((item) => item.isDefault) ?? null;
 }
 
-export function selectTypedAddress(addresses: StorefrontAddress[], addressId?: string | null) {
-  return addresses.find((item) => item.id === addressId) ?? addresses[0] ?? null;
+export function selectTypedAddress(
+  addresses: StorefrontAddress[],
+  addressId?: string | null,
+) {
+  return addresses.find((item) => item.id === addressId) ?? null;
 }
 
 export function checkoutApiRedirect(error: unknown): CheckoutRedirect | null {
@@ -93,7 +94,7 @@ export function checkoutApiRedirect(error: unknown): CheckoutRedirect | null {
 }
 
 export async function loadCheckoutPage(
-  search: { address?: string; shipping?: string; invoice?: string },
+  search: { address?: string; shipping?: string },
   deps: CheckoutReadDeps = defaultDeps,
 ): Promise<CheckoutPageModel> {
   try {
@@ -111,7 +112,6 @@ export async function loadCheckoutPage(
     const paymentTerm = deps.getPaymentTerm ? await deps.getPaymentTerm() : null;
     const typed = addresses as StorefrontAddress[];
     const shippingAddresses = typed.filter((item) => item.type === "delivery");
-    const invoiceAddresses = typed.filter((item) => item.type === "invoice");
     return {
       type: "ready",
       userName: me.user.name,
@@ -121,9 +121,7 @@ export async function loadCheckoutPage(
       selected: selectCheckoutAddress(addresses, search.address),
       paymentTerm,
       shippingAddresses,
-      invoiceAddresses,
       selectedShipping: selectTypedAddress(shippingAddresses, search.shipping),
-      selectedInvoice: selectTypedAddress(invoiceAddresses, search.invoice),
     };
   } catch (error) {
     const mapped = checkoutApiRedirect(error);

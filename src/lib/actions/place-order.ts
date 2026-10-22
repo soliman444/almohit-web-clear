@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CommerceError, commerceErrorCode } from "../commerce/errors";
 import { requireMerchant } from "../session/access";
-import { parseOdooRecordId } from "../odoo/catalog";
 import { checkoutOdooCart, mapOdooCheckoutError } from "../odoo/checkout";
 
 function value(fd: FormData, key: string) {
@@ -39,22 +38,47 @@ function revalidateStore() {
 export async function placeOdooOrderAction(formData: FormData) {
   await requireMerchant();
 
-  const shippingAddressId = parseOdooRecordId(value(formData, "shippingAddressId"));
-  const invoiceAddressId = parseOdooRecordId(value(formData, "invoiceAddressId"));
-  if (!shippingAddressId || !invoiceAddressId) {
-    redirect(withError("/checkout", new CommerceError("ADDRESS")));
+  const rawShipping = value(formData, "shippingAddressId");
+
+  let shippingAddressId: number | undefined;
+
+  if (rawShipping !== "") {
+    const parsed = Number(rawShipping);
+
+    if (
+      !/^[1-9]\d*$/.test(rawShipping) ||
+      !Number.isSafeInteger(parsed)
+    ) {
+      redirect(
+        withError("/checkout", new CommerceError("ADDRESS")),
+      );
+    }
+
+    shippingAddressId = parsed;
   }
 
   let orderId = "";
+
   try {
-    const order = await checkoutOdooCart({
-      shipping_address_id: shippingAddressId,
-      invoice_address_id: invoiceAddressId,
-    });
+    const order = await checkoutOdooCart(
+      shippingAddressId === undefined
+        ? {}
+        : { shipping_address_id: shippingAddressId },
+    );
+
     orderId = order.id;
   } catch (error) {
-    redirect(withError("/checkout", mapOdooCheckoutError(error)));
+    const path =
+      shippingAddressId === undefined
+        ? "/checkout"
+        : `/checkout?shipping=${shippingAddressId}`;
+
+    redirect(
+      withError(path, mapOdooCheckoutError(error)),
+    );
   }
+
   revalidateStore();
+
   redirect(`/account/orders/${orderId}?placed=1`);
 }

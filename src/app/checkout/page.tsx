@@ -17,11 +17,11 @@ export const dynamic = "force-dynamic";
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ address?: string; shipping?: string; invoice?: string; error?: string; available?: string }>;
+  searchParams: Promise<{ address?: string; shipping?: string; error?: string; available?: string }>;
 }) {
-  const { address, shipping, invoice, error, available } = await searchParams;
+  const { address, shipping, error, available } = await searchParams;
   await requireMerchant();
-  const loaded = await safeApiCall(() => loadCheckoutPage({ address, shipping, invoice }));
+  const loaded = await safeApiCall(() => loadCheckoutPage({ address, shipping }));
   if (!loaded.ok) return <StorefrontUnavailable />;
   const model = loaded.data;
   if (model.type === "redirect") redirect(model.to);
@@ -35,34 +35,98 @@ export default async function CheckoutPage({
   return (
     <StorefrontShell>
       <main className="sf-account sf-checkout-page">
-        <Link className="sf-text-link" href="/cart">Back to cart</Link>
-        <p className="sf-kicker">Checkout</p>
-        <h1>Confirm the order.</h1>
-        {saved && <p className="sf-cart-feedback" role="status">Address saved. Select it below and place the order.</p>}
-        {error && <p className="error" role="alert">{commerceMessage(error, undefined, available)}</p>}
-        <ul className="sf-cart-lines">
-          {cart.items.map((item) => (
-            <li key={item.id} className="sf-cart-line">
-              <div>
-                <b>{item.name}{item.variantName ? ` · ${item.variantName}` : ""}</b>
-                <p>{item.quantity} × {formatDisplayMoney(item.unitPrice, currency, catalog)}</p>
-              </div>
-              <p>{formatDisplayMoney(item.lineTotal, currency, catalog)}</p>
-            </li>
-          ))}
-        </ul>
-        <p>Subtotal {formatDisplayMoney(cart.subtotal, currency, catalog)}</p>
-        {tax != null && <p>Tax {formatDisplayMoney(tax, currency, catalog)}</p>}
-        <p className="sf-cart-total">Total {formatDisplayMoney(total, currency, catalog)}</p>
-        <p className="muted">Base currency: {formatCompanyBase(total, catalog)}</p>
-        {model.paymentTerm && <p>Payment terms: {model.paymentTerm.name} (set on your account)</p>}
+        <div className="sf-checkout-container">
+          
+          <div className="sf-checkout-header">
+            <Link className="sf-text-link sf-back-link" href="/cart">
+              &larr; Back to cart
+            </Link>
+            <p className="sf-kicker">Checkout</p>
+            <h1>Confirm the order</h1>
+          </div>
 
-        <OdooCheckoutForm
-          shippingAddresses={model.shippingAddresses}
-          invoiceAddresses={model.invoiceAddresses}
-          selectedShippingId={model.selectedShipping?.id}
-          selectedInvoiceId={model.selectedInvoice?.id}
-        />
+          {/* رسائل الحالة */}
+          {saved && (
+            <div className="sf-alert sf-alert-success" role="status">
+              Address saved. Select it below and place the order.
+            </div>
+          )}
+          {error && (
+            <div className="sf-alert sf-alert-error" role="alert">
+              {commerceMessage(error, undefined, available)}
+            </div>
+          )}
+
+          {/* التخطيط الشبكي (عمودين) */}
+          <div className="sf-checkout-grid">
+            
+            {/* العمود الأيمن: العناصر والعنوان */}
+            <div className="sf-checkout-main">
+              <div className="sf-checkout-card">
+                <h2 className="sf-card-title">Your Items</h2>
+                <ul className="sf-cart-lines">
+                  {cart.items.map((item) => (
+                    <li key={item.id} className="sf-cart-line">
+                      <div className="sf-cart-line-info">
+                        <span className="sf-cart-line-name">
+                          <b>{item.name}</b>
+                          {item.variantName && <span className="sf-variant-name"> · {item.variantName}</span>}
+                        </span>
+                        <span className="sf-cart-line-qty">
+                          {item.quantity} × {formatDisplayMoney(item.unitPrice, currency, catalog)}
+                        </span>
+                      </div>
+                      <p className="sf-cart-line-total">
+                        {formatDisplayMoney(item.lineTotal, currency, catalog)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <OdooCheckoutForm
+                shippingAddresses={model.shippingAddresses}
+                selectedShippingId={model.selectedShipping?.id}
+              />
+            </div>
+
+            {/* العمود الأيسر: ملخص الطلب (ثابت) */}
+            <div className="sf-checkout-sidebar">
+              <div className="sf-checkout-card sf-summary-card">
+                <h2 className="sf-card-title">Order Summary</h2>
+                
+                <div className="sf-summary-rows">
+                  <div className="sf-summary-row">
+                    <span>Subtotal</span>
+                    <span>{formatDisplayMoney(cart.subtotal, currency, catalog)}</span>
+                  </div>
+                  {tax != null && (
+                    <div className="sf-summary-row">
+                      <span>Tax</span>
+                      <span>{formatDisplayMoney(tax, currency, catalog)}</span>
+                    </div>
+                  )}
+                  {model.paymentTerm && (
+                    <div className="sf-summary-row">
+                      <span>Payment terms</span>
+                      <span className="sf-summary-value-left">{model.paymentTerm.name}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="sf-summary-total">
+                  <span>Total</span>
+                  <span className="sf-total-price">{formatDisplayMoney(total, currency, catalog)}</span>
+                </div>
+                
+                <p className="sf-base-currency">
+                  Base currency: {formatCompanyBase(total, catalog)}
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
       </main>
     </StorefrontShell>
   );
@@ -74,70 +138,51 @@ function formatAddress(item: StorefrontAddress) {
 
 function OdooCheckoutForm({
   shippingAddresses,
-  invoiceAddresses,
   selectedShippingId,
-  selectedInvoiceId,
 }: {
   shippingAddresses: StorefrontAddress[];
-  invoiceAddresses: StorefrontAddress[];
   selectedShippingId?: string;
-  selectedInvoiceId?: string;
 }) {
-  const ready = shippingAddresses.length > 0 && invoiceAddresses.length > 0;
+  const ready = shippingAddresses.length > 0;
   return (
-    <div className="sf-checkout-block">
+    <div className="sf-checkout-card">
       {shippingAddresses.length === 0 && (
-        <p className="sf-checkout-missing">
-          Add a delivery address before placing the order.{" "}
-          <Link className="sf-btn" href="/account/addresses?type=delivery&returnTo=/checkout">
+        <div className="sf-empty-address">
+          <p>Add a delivery address before placing the order.</p>
+          <Link className="sf-btn sf-btn-primary" href="/account/addresses?type=delivery&returnTo=/checkout">
             <span>Add delivery address</span>
           </Link>
-        </p>
-      )}
-      {invoiceAddresses.length === 0 && (
-        <p className="sf-checkout-missing">
-          Add an invoice address before placing the order.{" "}
-          <Link className="sf-btn" href="/account/addresses?type=invoice&returnTo=/checkout">
-            <span>Add invoice address</span>
-          </Link>
-        </p>
+        </div>
       )}
       {ready && (
-        <form className="sf-auth-form" action={placeOdooOrderAction} style={{ padding: 0 }}>
-          <div className="sf-once-fields">
-            <fieldset className="sf-checkout-addresses">
-              <legend>Choose a delivery address</legend>
+        <form action={placeOdooOrderAction} className="sf-checkout-form">
+          <div className="sf-form-section">
+            <h3 className="sf-card-title">Delivery Address</h3>
+            <div className="sf-address-list">
               {shippingAddresses.map((item) => (
-                <label key={item.id} className="sf-address-choice">
+                <label key={item.id} className="sf-address-item">
                   <input
                     type="radio"
                     name="shippingAddressId"
                     value={item.id}
                     defaultChecked={(selectedShippingId ?? shippingAddresses[0].id) === item.id}
                   />
-                  <span>{formatAddress(item)}</span>
+                  <span className="sf-address-text">{formatAddress(item)}</span>
                 </label>
               ))}
-            </fieldset>
-            <fieldset className="sf-checkout-addresses">
-              <legend>Invoice address</legend>
-              {invoiceAddresses.map((item) => (
-                <label key={item.id} className="sf-address-choice">
-                  <input
-                    type="radio"
-                    name="invoiceAddressId"
-                    value={item.id}
-                    defaultChecked={(selectedInvoiceId ?? invoiceAddresses[0].id) === item.id}
-                  />
-                  <span>{formatAddress(item)}</span>
-                </label>
-              ))}
-            </fieldset>
-            <p>
+            </div>
+            <p className="sf-address-hint">
               Need another address?{" "}
-              <Link className="sf-text-link" href="/account/addresses?returnTo=/checkout">Add or edit addresses</Link>
+              <Link className="sf-text-link" href="/account/addresses?returnTo=/checkout">
+                Add or edit addresses
+              </Link>
             </p>
-            <OnceSubmit className="sf-btn" pendingLabel="Placing order…"><span>Place order</span></OnceSubmit>
+          </div>
+
+          <div className="sf-form-actions">
+            <OnceSubmit className="sf-btn sf-btn-success sf-btn-block" pendingLabel="Placing order…">
+              <span>Place order</span>
+            </OnceSubmit>
           </div>
         </form>
       )}

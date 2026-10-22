@@ -5,14 +5,26 @@ import { odooRequest } from "./client";
 import type { OdooCookieAdapter } from "./types";
 
 export type OdooCheckoutInput = {
-  shipping_address_id: number;
-  invoice_address_id: number;
+  shipping_address_id?: number;
 };
 
-export function odooCheckoutPayload(shippingAddressId: number, invoiceAddressId: number): OdooCheckoutInput {
+export function odooCheckoutPayload(
+  shippingAddressId?: number,
+): OdooCheckoutInput {
+  // عدم اختيار عنوان إضافي يعني استخدام العنوان الرئيسي في Odoo.
+  if (shippingAddressId === undefined) {
+    return {};
+  }
+
+  if (
+    !Number.isSafeInteger(shippingAddressId) ||
+    shippingAddressId < 1
+  ) {
+    throw new CommerceError("ADDRESS");
+  }
+
   return {
     shipping_address_id: shippingAddressId,
-    invoice_address_id: invoiceAddressId,
   };
 }
 
@@ -47,14 +59,15 @@ export function mapOdooCheckoutError(error: unknown): CommerceError {
 }
 
 export async function checkoutOdooCart(
-  input: OdooCheckoutInput,
+  input: OdooCheckoutInput = {},
   cookies?: OdooCookieAdapter,
 ): Promise<StorefrontOrderDetail> {
   const payload = await odooRequest<OdooOrderPayload>("/checkout", {
     method: "POST",
     cookies,
     captureSetCookie: false,
-    body: odooCheckoutPayload(input.shipping_address_id, input.invoice_address_id),
+    body: odooCheckoutPayload(input.shipping_address_id),
   });
+
   return mapOdooOrder(payload);
 }
