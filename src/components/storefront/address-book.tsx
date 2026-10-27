@@ -34,6 +34,11 @@ function countryValue(address?: BookAddress) {
   return code.length === 2 ? code.toUpperCase() : "SA";
 }
 
+function countryName(codeOrName: string) {
+  const code = codeOrName.length === 2 ? codeOrName.toUpperCase() : "";
+  return COUNTRIES.find((item) => item.code === code)?.name ?? codeOrName;
+}
+
 function AddressFields({
   address,
   defaultType,
@@ -99,46 +104,100 @@ function AddressCard({
   defaultPhone: string;
 }) {
   const [editing, setEditing] = useState(false);
+  const street = [address.line1, address.line2].filter(Boolean).join(", ");
+  const cityLine = [address.city, address.region, address.postalCode].filter(Boolean).join(", ");
+
   return (
-    <article className="sf-address-card">
-      <p className="sf-address-badge">{address.type === "invoice" ? "Invoice" : "Delivery"}</p>
-      <p><b>{address.label || address.recipient}</b></p>
-      <p>{address.recipient}</p>
-      <p>{address.line1}{address.line2 ? `, ${address.line2}` : ""}</p>
-      <p>{[address.city, address.region, address.postalCode].filter(Boolean).join(", ")}</p>
-      <p>{address.country}</p>
-      {address.phone && <p>{address.phone}</p>}
-      {!editing && (
-        <div className="actions">
-          <button className="sf-btn is-subtle" type="button" onClick={() => setEditing(true)}>
-            <span>Edit</span>
-          </button>
-          <OnceForm action={deleteAddressAction}>
-            <input type="hidden" name="id" value={address.id} />
-            <input type="hidden" name="returnTo" value={returnTo} />
-            <OnceSubmit className="sf-text-link" pendingLabel="Archiving…">Archive</OnceSubmit>
-          </OnceForm>
+    <li>
+      <article className="sf-invoice-row sf-address-card-row">
+        <div className="sf-invoice-col sf-col-main">
+          <span className="sf-invoice-number">{address.label || address.recipient}</span>
+          <span className="sf-invoice-dates">{address.recipient}</span>
+          {street ? <span className="sf-invoice-order">{street}</span> : null}
+          {cityLine ? <span className="sf-invoice-order">{cityLine}</span> : null}
+          <span className="sf-invoice-order">{countryName(address.country)}</span>
+          {address.phone ? <span className="sf-invoice-due">{address.phone}</span> : null}
         </div>
-      )}
-      {editing && (
-        <OnceForm className="sf-auth-form" action={updateAddressAction} style={{ padding: 0 }}>
-          <input type="hidden" name="id" value={address.id} />
-          <input type="hidden" name="returnTo" value={returnTo} />
-          <AddressFields
-            address={address}
-            defaultType={address.type === "invoice" ? "invoice" : "delivery"}
-            defaultName={defaultName}
-            defaultPhone={defaultPhone}
-          />
-          <div className="actions">
-            <OnceSubmit className="sf-btn" pendingLabel="Saving…"><span>Save address</span></OnceSubmit>
-            <button className="sf-btn is-subtle" type="button" onClick={() => setEditing(false)}>
-              <span>Cancel</span>
-            </button>
+
+        <div className="sf-invoice-col sf-col-status">
+          <span className="sf-badge">{address.type === "invoice" ? "Invoice" : "Delivery"}</span>
+          {address.isDefault ? <span className="sf-invoice-dates">Default</span> : null}
+        </div>
+
+        <div className="sf-invoice-col sf-col-amounts">
+          {!editing && (
+            <div className="actions">
+              <button className="sf-btn is-subtle" type="button" onClick={() => setEditing(true)}>
+                <span>Edit</span>
+              </button>
+              <OnceForm action={deleteAddressAction}>
+                <input type="hidden" name="id" value={address.id} />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <OnceSubmit className="sf-text-link" pendingLabel="Archiving…">Archive</OnceSubmit>
+              </OnceForm>
+            </div>
+          )}
+        </div>
+
+        {editing && (
+          <div className="sf-address-edit is-wide">
+            <OnceForm className="sf-auth-form" action={updateAddressAction} style={{ padding: 0 }}>
+              <input type="hidden" name="id" value={address.id} />
+              <input type="hidden" name="returnTo" value={returnTo} />
+              <AddressFields
+                address={address}
+                defaultType={address.type === "invoice" ? "invoice" : "delivery"}
+                defaultName={defaultName}
+                defaultPhone={defaultPhone}
+              />
+              <div className="actions">
+                <OnceSubmit className="sf-btn" pendingLabel="Saving…"><span>Save address</span></OnceSubmit>
+                <button className="sf-btn is-subtle" type="button" onClick={() => setEditing(false)}>
+                  <span>Cancel</span>
+                </button>
+              </div>
+            </OnceForm>
           </div>
-        </OnceForm>
+        )}
+      </article>
+    </li>
+  );
+}
+
+function AddressGroup({
+  title,
+  empty,
+  addresses,
+  returnTo,
+  defaultName,
+  defaultPhone,
+}: {
+  title: string;
+  empty: string;
+  addresses: BookAddress[];
+  returnTo: string;
+  defaultName: string;
+  defaultPhone: string;
+}) {
+  return (
+    <section className="sf-address-section">
+      <h2>{title}</h2>
+      {addresses.length === 0 ? (
+        <p className="muted">{empty}</p>
+      ) : (
+        <ul className="sf-order-list sf-invoice-card">
+          {addresses.map((address) => (
+            <AddressCard
+              key={address.id}
+              address={address}
+              returnTo={returnTo}
+              defaultName={defaultName}
+              defaultPhone={defaultPhone}
+            />
+          ))}
+        </ul>
       )}
-    </article>
+    </section>
   );
 }
 
@@ -160,6 +219,7 @@ export function AddressBook({
   const delivery = addresses.filter((item) => item.type === "delivery");
   const invoice = addresses.filter((item) => item.type === "invoice");
   const fromCheckout = returnTo === "/checkout";
+
   return (
     <>
       {saved && <p role="status">Address saved.</p>}
@@ -168,44 +228,28 @@ export function AddressBook({
           <Link className="sf-btn" href="/checkout"><span>Back to checkout</span></Link>
         </p>
       )}
-      <section className="sf-address-section">
-        <h2>Existing addresses</h2>
-        <h3>Delivery address</h3>
-        {delivery.length === 0 && (
-          <p>
-            No delivery address yet.
-            {fromCheckout ? " Add one below, then return to checkout." : ""}
-          </p>
-        )}
-        {delivery.map((address) => (
-          <AddressCard
-            key={address.id}
-            address={address}
-            returnTo={returnTo}
-            defaultName={defaultName}
-            defaultPhone={defaultPhone}
-          />
-        ))}
-        <h3>Invoice address</h3>
-        {invoice.length === 0 && (
-          <p>
-            No invoice address yet.
-            {fromCheckout ? " Add one below, then return to checkout." : ""}
-          </p>
-        )}
-        {invoice.map((address) => (
-          <AddressCard
-            key={address.id}
-            address={address}
-            returnTo={returnTo}
-            defaultName={defaultName}
-            defaultPhone={defaultPhone}
-          />
-        ))}
-      </section>
+
+      <AddressGroup
+        title="Delivery addresses"
+        empty={fromCheckout ? "No delivery address yet. Add one below, then return to checkout." : "No delivery address yet."}
+        addresses={delivery}
+        returnTo={returnTo}
+        defaultName={defaultName}
+        defaultPhone={defaultPhone}
+      />
+
+      <AddressGroup
+        title="Invoice addresses"
+        empty={fromCheckout ? "No invoice address yet. Add one below, then return to checkout." : "No invoice address yet."}
+        addresses={invoice}
+        returnTo={returnTo}
+        defaultName={defaultName}
+        defaultPhone={defaultPhone}
+      />
+
       <section className="sf-address-section">
         <h2>Add new address</h2>
-        <p>Use this form only to create a new address. Existing addresses stay collapsed until you click Edit.</p>
+        <p className="muted">Use this form only to create a new address. Existing addresses stay collapsed until you click Edit.</p>
         <OnceForm className="sf-auth-form" action={createAddressAction} style={{ padding: 0 }}>
           <input type="hidden" name="returnTo" value={returnTo} />
           <AddressFields

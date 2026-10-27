@@ -13,11 +13,11 @@ import type { StorefrontOrderDetail } from "../../../../lib/odoo/orders";
 
 export const dynamic = "force-dynamic";
 
-function pretty(value: string) {
+export function pretty(value: string) {
   return value.replaceAll("_", " ");
 }
 
-function formatInvoiceDate(value: string) {
+export function formatInvoiceDate(value: string) {
   const parsed = Date.parse(value);
   if (!Number.isFinite(parsed)) return value;
   return new Intl.DateTimeFormat("en-GB", {
@@ -95,7 +95,7 @@ export default async function OrderDetailPage({
               <div className="sf-invoice-brand-col">
                 <h1 className="sf-brand-name">Almohit</h1>
                 <p className="muted">Wholesale</p>
-                <p className="muted">hello@almohit.local</p>
+                <p className="muted">y.barakat@m-arabi.com</p>
               </div>
               <div className="sf-invoice-number-col">
                 <p className="sf-kicker">INVOICE</p>

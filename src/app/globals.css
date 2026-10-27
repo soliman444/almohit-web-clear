@@ -1839,6 +1839,25 @@ button, input, textarea, select { font: inherit; }
 .sf-address-card { display: grid; gap: 6px; padding: 18px 0; border-bottom: 1px solid var(--sf-line); }
 .sf-address-badge { margin: 0; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; }
 .sf-addresses-page { max-width: 920px; }
+.sf-address-card-row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.sf-address-card-row .sf-col-amounts .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.sf-address-edit {
+  flex: 1 1 100%;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
 .sf-address-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1887,7 +1906,21 @@ button, input, textarea, select { font: inherit; }
   align-items: center;
   margin-top: 12px;
 }
-.sf-order-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.sf-order-list { 
+  list-style: none; 
+  margin: 0; 
+  padding: 0; 
+  display: grid; 
+  gap: 16px; 
+}
+.sf-invoice-card {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
 .sf-order-list a { display: grid; gap: 4px; }
 .sf-timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .sf-timeline li { padding-left: 14px; border-left: 1px solid var(--sf-ink); }
@@ -1983,7 +2016,8 @@ button, input, textarea, select { font: inherit; }
   }
   .sf-account.sf-invoice-page {
     padding: 0;
-    max-width: none;
+    max-width: 100%;
+    margin: 0 auto;
   }
   .sf-invoice {
     border-top: 0;
@@ -4337,5 +4371,115 @@ button, input, textarea, select { font: inherit; }
   }
   body {
     background-color: #fff;
+  }
+}
+.sf-invoice-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  transition: background-color 0.2s;
+}
+
+.sf-invoice-row:hover {
+  background-color: #f9fafb;
+}
+
+.sf-col-main {
+  flex: 2;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sf-invoice-number {
+  font-weight: 600;
+  color: #111827;
+  font-size: 1rem;
+}
+
+.sf-invoice-dates, .sf-invoice-due, .sf-invoice-order {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.sf-col-status {
+  flex: 1;
+  text-align: center;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sf-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.sf-order-list > li > a {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sf-order-list > li:last-child .sf-invoice-row {
+  border-bottom: 0;
+}
+
+.sf-col-amounts {
+  flex: 2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 2rem;
+  min-width: 200px;
+}
+
+.sf-amount-group {
+  text-align: right;
+}
+
+.sf-label {
+  display: block;
+  font-size: 0.7rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  margin-bottom: 0.15rem;
+}
+
+.sf-value {
+  font-weight: 600;
+  color: #111827;
+}
+
+.sf-text-danger {
+  color: #ef4444;
+}
+
+/* للشاشات الصغيرة (الهواتف) */
+@media (max-width: 768px) {
+  .sf-invoice-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .sf-col-amounts {
+    width: 100%;
+    justify-content: space-between;
+    text-align: left;
   }
 }

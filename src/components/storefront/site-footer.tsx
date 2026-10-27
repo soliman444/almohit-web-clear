@@ -7,7 +7,7 @@ export function SiteFooter() {
       <div className="sf-footer-top">
         <div>
           <p>A wholesale catalog you can browse first. Trade prices after approval.</p>
-          <p>hello@almohit.local</p>
+          <p>y.barakat@m-arabi.com</p>
         </div>
         <div>
           <p>Navigate</p>

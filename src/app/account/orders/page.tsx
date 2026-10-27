@@ -49,7 +49,7 @@ export default async function OrdersPage({
 
   return (
     <StorefrontShell>
-      <main className="sf-account">
+      <main className="sf-account sf-invoice-page">
         <Link className="sf-text-link" href="/account">Back to my account</Link>
         <p className="sf-kicker">Orders</p>
         <h1>Order history.</h1>
@@ -58,14 +58,41 @@ export default async function OrdersPage({
         {orders.length === 0 && (
           <p>{filtered ? "No matching orders." : "No orders yet."}</p>
         )}
-        <ul className="sf-order-list">
+        <ul className="sf-order-list sf-invoice-card">
           {orders.map((order) => (
             <li key={order.id}>
               <Link href={`/account/orders/${hrefFor(order)}`}>
-                <b>{order.orderNumber}</b>
-                <p>{new Date(order.createdAt).toLocaleDateString("en-GB")} · {order.status} · {formatDisplayMoney(order.total.amount, currency, catalog)}</p>
-                <p className="muted">{formatCompanyBase(order.total.amount, catalog)} base</p>
-                <p>{order.itemCount} items</p>
+                <div className="sf-invoice-row">
+                  <div className="sf-invoice-col sf-col-main">
+                    <span className="sf-invoice-number">{order.orderNumber}</span>
+                    <span className="sf-invoice-dates">
+                      {new Date(order.createdAt).toLocaleDateString("en-GB")}
+                    </span>
+                    <span className="sf-invoice-order">
+                      {order.itemCount} item{order.itemCount === 1 ? "" : "s"}
+                    </span>
+                  </div>
+
+                  <div className="sf-invoice-col sf-col-status">
+                    <span className="sf-badge">{pretty(order.status)}</span>
+                    <span className="sf-invoice-dates">{pretty(order.payment.status)}</span>
+                  </div>
+
+                  <div className="sf-invoice-col sf-col-amounts">
+                    <div className="sf-amount-group">
+                      <span className="sf-label">Total</span>
+                      <span className="sf-value">
+                        {formatDisplayMoney(order.total.amount, currency, catalog)}
+                      </span>
+                    </div>
+                    <div className="sf-amount-group">
+                      <span className="sf-label">Base</span>
+                      <span className="sf-value muted">
+                        {formatCompanyBase(order.total.amount, catalog)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </Link>
             </li>
           ))}
@@ -77,4 +104,8 @@ export default async function OrdersPage({
       </main>
     </StorefrontShell>
   );
+}
+
+function pretty(value: string) {
+  return value.replaceAll("_", " ");
 }
