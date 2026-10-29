@@ -50,3 +50,11 @@ export async function requireDistributor() {
   }
   return session;
 }
+
+export async function requireBuyer() {
+  const session = await requireStorefrontApproved();
+  if (session.customer.role !== "buyer") {
+    redirect("/account");
+  }
+  return session;
+}

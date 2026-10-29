@@ -11,6 +11,8 @@ import { fetchStorefrontProducts } from "../../lib/catalog/products";
 import { safeApiCall } from "../../lib/odoo/safe";
 import { flattenCategories } from "../../lib/catalog/flatten";
 import {
+  parseCatalogMaxMoq,
+  parseCatalogMinMoq,
   parseCatalogPage,
   parseCatalogSort,
   storefrontCatalogHref,
@@ -37,8 +39,8 @@ export default async function ProductsPage({
         category: query.category,
         brand: query.brand,
         inStock: query.availability === "in-stock" ? true : undefined,
-        minMoq: query.min_moq ? Number(query.min_moq) : undefined,
-        maxMoq: query.max_moq ? Number(query.max_moq) : undefined,
+        minMoq: parseCatalogMinMoq(query.min_moq),
+        maxMoq: parseCatalogMaxMoq(query.max_moq),
         sort,
         page,
       }),

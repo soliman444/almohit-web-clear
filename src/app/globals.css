@@ -70,6 +70,23 @@ button, input, textarea, select { font: inherit; }
 .field textarea { min-height: 110px; }
 .muted { color: var(--muted); }
 .error { color: var(--danger); }
+.sf-form-error { margin: 0 0 16px; }
+.sf-form-error-fields { display: block; margin-top: 4px; opacity: 0.9; }
+.sf-field.is-invalid input,
+.sf-field.is-invalid select,
+.sf-field.is-invalid textarea,
+.sf-biz-field.is-invalid input,
+.sf-biz-field.is-invalid select,
+.sf-biz-field.is-invalid textarea,
+.sf-buyer-lines.is-invalid .sf-cart-table,
+.sf-cart-table td.is-invalid input {
+  border-color: var(--danger);
+  outline-color: var(--danger);
+}
+.sf-field.is-invalid,
+.sf-biz-field.is-invalid {
+  color: var(--danger);
+}
 .badge { display: inline-flex; padding: 5px 10px; border-radius: 999px; background: var(--accent2); font-size: 12px; font-weight: 700; text-transform: capitalize; }
 .badge.is-ok { background: #dff0e5; color: #173d2a; }
 .badge.is-warn { background: #fff3d6; color: #7a5a12; }
@@ -1857,6 +1874,63 @@ button, input, textarea, select { font: inherit; }
   margin-top: 0.5rem;
   padding-top: 1rem;
   border-top: 1px solid #e5e7eb;
+}
+
+.sf-buyer-hub {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+  max-width: 420px;
+}
+
+.sf-buyer-lines {
+  display: grid;
+  gap: 16px;
+  margin: 16px 0 28px;
+}
+
+.sf-buyer-currency {
+  margin: 0;
+  color: var(--sf-muted, #5c5c5c);
+}
+
+.sf-buyer-currency-field {
+  max-width: 280px;
+}
+
+.sf-buyer-lines input,
+.sf-buyer-lines select {
+  width: 100%;
+  min-width: 0;
+}
+
+.sf-buyer-uom,
+.sf-buyer-destination,
+.sf-buyer-line-total {
+  display: block;
+  white-space: nowrap;
+}
+
+.sf-buyer-lines tfoot th,
+.sf-buyer-lines tfoot td {
+  padding-top: 14px;
+  border-top: 1px solid var(--sf-line, #ddd);
+}
+
+.sf-buyer-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sf-buyer-images a {
+  display: block;
+  border: 1px solid var(--sf-line);
+  overflow: hidden;
+}
+
+.sf-buyer-product-image {
+  margin: 16px 0 24px;
 }
 .sf-address-form {
   display: grid;

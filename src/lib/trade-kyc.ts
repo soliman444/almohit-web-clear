@@ -50,10 +50,14 @@ export function parseAppRole(value: string): AppRole {
   return APP_ROLES.includes(value as AppRole) ? (value as AppRole) : "merchant";
 }
 
+function zodFieldNames(error: z.ZodError) {
+  return [...new Set(error.issues.map((issue) => String(issue.path[0] ?? "")))].filter(Boolean);
+}
+
 export function parseTradeKyc(
   formData: FormData,
   role: AppRole,
-): { success: true; data: ParsedTradeKyc } | { success: false } {
+): { success: true; data: ParsedTradeKyc } | { success: false; fields: string[] } {
   if (role === "merchant") {
     const parsed = merchantSchema.safeParse({
       businessName: formValue(formData, "businessName"),
@@ -68,7 +72,9 @@ export function parseTradeKyc(
       phone: formValue(formData, "phone") || undefined,
       notes: formValue(formData, "notes") || undefined,
     });
-    return parsed.success ? { success: true, data: parsed.data } : { success: false };
+    return parsed.success
+      ? { success: true, data: parsed.data }
+      : { success: false, fields: zodFieldNames(parsed.error) };
   }
 
   const parsed = officeSchema.safeParse({
@@ -81,7 +87,9 @@ export function parseTradeKyc(
     phone: formValue(formData, "phone") || undefined,
     notes: formValue(formData, "notes") || undefined,
   });
-  return parsed.success ? { success: true, data: parsed.data } : { success: false };
+  return parsed.success
+    ? { success: true, data: parsed.data }
+    : { success: false, fields: zodFieldNames(parsed.error) };
 }
 
 export function tradeApplicationFromKyc(role: AppRole, input: ParsedTradeKyc) {

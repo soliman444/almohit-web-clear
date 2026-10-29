@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import { EMPTY_CURRENCY_CATALOG, type DisplayCurrencyCode, type DisplayCurrencyConfig } from "../../config/currencies";
-import { formatDisplayMoney, type DisplayMoneyInput } from "../../lib/currency/format";
+import { formatCatalogMoney, formatDisplayMoney, type DisplayMoneyInput } from "../../lib/currency/format";
 
 type DisplayCurrencyState = {
   currency: DisplayCurrencyCode;
@@ -37,4 +37,10 @@ export function useCurrencyCatalog() {
 export function useFormatDisplayMoney() {
   const { currency, catalog } = useContext(DisplayCurrencyContext);
   return (amount: DisplayMoneyInput) => formatDisplayMoney(amount, currency, catalog);
+}
+
+/** Product catalog prices already arrive in the selected display currency. */
+export function useFormatCatalogMoney() {
+  const { currency, catalog } = useContext(DisplayCurrencyContext);
+  return (amount: DisplayMoneyInput) => formatCatalogMoney(amount, currency, catalog);
 }

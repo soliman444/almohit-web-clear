@@ -41,6 +41,21 @@ export function parseCatalogSort(value?: string): OdooProductSort | undefined {
     : undefined;
 }
 
+/** Empty / invalid → undefined. `min_moq=0` is treated as no lower bound. */
+export function parseCatalogMinMoq(value?: string): number | undefined {
+  if (value == null || !String(value).trim()) return undefined;
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) return undefined;
+  return amount;
+}
+
+export function parseCatalogMaxMoq(value?: string): number | undefined {
+  if (value == null || !String(value).trim()) return undefined;
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < 0) return undefined;
+  return amount;
+}
+
 export function storefrontCatalogHref(
   pathname: string,
   query: FinderQuery,

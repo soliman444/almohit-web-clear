@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ApiClientError, ApiUnavailableError } from "../odoo/errors";
+import { redirectFormError } from "../form-errors";
 import { destroySession } from "../session/staff";
 import { isOdooAuthError, loginCustomer, logoutCurrentCustomer, registerCustomer } from "../odoo/auth";
 import { getTradeApplication, submitTradeApplication } from "../odoo/trade";
@@ -22,7 +23,9 @@ export async function registerAction(formData: FormData) {
   });
   if (!account.success) redirect("/register?error=account");
   const kyc = parseTradeKyc(formData, account.data.role);
-  if (!kyc.success) redirect("/register?error=kyc");
+  if (!kyc.success) {
+    redirectFormError("/register", { code: "kyc", fields: kyc.fields });
+  }
 
   try {
     await registerCustomer({
@@ -107,7 +110,9 @@ export async function submitBusinessRequestAction(formData: FormData) {
 
   const role = parseAppRole(sessionCustomer.role ?? "merchant");
   const kyc = parseTradeKyc(formData, role);
-  if (!kyc.success) redirect("/account/business?error=kyc");
+  if (!kyc.success) {
+    redirectFormError("/account/business", { code: "kyc", fields: kyc.fields });
+  }
 
   try {
     const image = formData.get("shopImage");
@@ -124,13 +129,35 @@ export async function submitBusinessRequestAction(formData: FormData) {
     if (isOdooAuthError(error, "APPLICATION_ALREADY_PENDING") || isOdooAuthError(error, "APPLICATION_ALREADY_APPROVED")) {
       redirect("/account/business");
     }
-    if (isOdooAuthError(error, "INVALID_IMAGE")) redirect("/account/business?error=image");
-    if (isOdooAuthError(error, "INVALID_PAYMENT_METHOD")) redirect("/account/business?error=payment");
-    if (isOdooAuthError(error, "INVALID_ROLE")) redirect("/account/business?error=role");
+    if (isOdooAuthError(error, "INVALID_IMAGE")) {
+      redirectFormError("/account/business", {
+        code: "image",
+        message: error instanceof ApiClientError ? error.message : undefined,
+        fields: ["shopImage"],
+      });
+    }
+    if (isOdooAuthError(error, "INVALID_PAYMENT_METHOD")) {
+      redirectFormError("/account/business", {
+        code: "payment",
+        message: error instanceof ApiClientError ? error.message : undefined,
+        fields: ["paymentMethod"],
+      });
+    }
+    if (isOdooAuthError(error, "INVALID_ROLE")) {
+      redirectFormError("/account/business", { code: "role" });
+    }
     if (isOdooAuthError(error, "UNAUTHENTICATED") || (error instanceof ApiClientError && error.status === 401)) {
       redirect("/login");
     }
-    if (error instanceof ApiUnavailableError) redirect("/account/business?error=unavailable");
+    if (error instanceof ApiUnavailableError) {
+      redirectFormError("/account/business", { code: "unavailable" });
+    }
+    if (error instanceof ApiClientError) {
+      redirectFormError("/account/business", {
+        code: "failed",
+        message: error.message,
+      });
+    }
     throw error;
   }
   redirect("/account/business?status=submitted");

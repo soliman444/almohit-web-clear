@@ -25,17 +25,23 @@ export async function getCurrentCustomer(): Promise<CustomerProfile | null> {
 }
 
 export async function getBusinessStatus(): Promise<BusinessStatusResponse> {
-  const odoo = await import("../odoo/auth");
-  if (await odoo.getOdooStaffUser()) {
+  try {
+    const odoo = await import("../odoo/auth");
+    if (await odoo.getOdooStaffUser()) {
+      return noAccess;
+    }
+    if (!(await odoo.hasOdooSession())) return noAccess;
+    const customer = await odoo.getCurrentCustomer();
+    if (!customer) return noAccess;
+    // Match Odoo catalog `may_see_price`: approved trade status only.
+    const canViewWholesalePrices = customer.tradeStatus === "approved";
+    return {
+      state: customer.tradeStatus,
+      // UI capability only. Odoo remains the price authority.
+      canViewWholesalePrices,
+    };
+  } catch {
+    // Shell/header must stay up when Odoo is briefly unreachable.
     return noAccess;
   }
-  if (!(await odoo.hasOdooSession())) return noAccess;
-  const customer = await odoo.getCurrentCustomer();
-  if (!customer) return noAccess;
-  const canViewWholesalePrices = customer.role === "merchant" && customer.tradeStatus === "approved";
-  return {
-    state: customer.tradeStatus,
-    // UI capability only. Odoo remains the price authority.
-    canViewWholesalePrices,
-  };
 }

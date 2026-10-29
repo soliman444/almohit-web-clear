@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { FormErrorBanner } from "../../../components/storefront/form-error-banner";
 import { OnceForm, OnceSubmit } from "../../../components/storefront/once-submit";
 import { StorefrontShell } from "../../../components/storefront/shell";
 import { TradeKycFields } from "../../../components/storefront/trade-kyc-fields";
@@ -8,16 +9,17 @@ import { parseAppRole } from "../../../lib/trade-kyc";
 import { StorefrontUnavailable } from "../../../components/system/storefront-unavailable";
 import { getCurrentCustomer, getCurrentCustomerSession } from "../../../lib/session/customer";
 import { safeApiCall } from "../../../lib/odoo/safe";
-import { commerceMessage } from "../../../lib/commerce/errors";
+import { parseTradeFormError, type FormErrorQuery } from "../../../lib/form-errors";
 import { hasOdooSession } from "../../../lib/odoo/auth";
 import { getTradeApplication } from "../../../lib/odoo/trade";
 
 export default async function BusinessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<FormErrorQuery>;
 }) {
-  const { error } = await searchParams;
+  const query = await searchParams;
+  const formError = parseTradeFormError(query);
   const odooSession = await hasOdooSession();
   if (!odooSession) redirect("/login");
   const loaded = await safeApiCall(async () => {
@@ -119,21 +121,16 @@ export default async function BusinessPage({
             <p className="sf-count">{copy.intro}</p>
           </div>
         </header>
-        {error && (
-          <p className="error sf-biz-error">
-            {error === "unavailable"
-              ? commerceMessage("SERVICE_UNAVAILABLE")
-              : error === "image"
-                ? "Upload a JPEG, PNG, GIF, or WebP shop photo under 5 MB."
-                : error === "payment"
-                  ? "Choose how the shop will pay."
-                  : error === "role"
-                    ? "Choose a valid account type."
-                    : error === "kyc"
-                      ? copy.kyc
-                      : commerceMessage(error)}
-          </p>
-        )}
+        <div className="sf-biz-error">
+          <FormErrorBanner
+            error={formError
+              ? {
+                  ...formError,
+                  message: formError.code === "kyc" && !query.detail ? copy.kyc : formError.message,
+                }
+              : null}
+          />
+        </div>
         {locked ? (
           <div className="sf-biz-panel">
             <TradeKycFields role={role} readOnly defaults={kycDefaults} />
@@ -141,7 +138,7 @@ export default async function BusinessPage({
         ) : (
           <OnceForm className="sf-business-form" action={submitBusinessRequestAction}>
             <div className="sf-biz-panel">
-              <TradeKycFields role={role} defaults={kycDefaults} />
+              <TradeKycFields role={role} defaults={kycDefaults} invalidFields={formError?.fields ?? []} />
               <div className="sf-biz-actions">
                 <OnceSubmit className="sf-btn" pendingLabel="Submitting…">
                   <span>{copy.submit}</span>

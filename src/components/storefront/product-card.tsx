@@ -5,8 +5,9 @@ import { fieldFor } from "../../lib/content/shots";
 import { promoForProduct } from "../../lib/content/promos";
 import { galleryImages, primaryImage, productRevealMode, secondaryImage, viewTransitionName } from "../../lib/catalog/media";
 import type { StorefrontProduct } from "../../lib/catalog/types";
-import { useFormatDisplayMoney } from "./display-currency";
+import { useFormatCatalogMoney } from "./display-currency";
 import { MediaFrame } from "./media-frame";
+import { useCanViewWholesalePrices } from "./price-access";
 import { Reveal } from "./reveal";
 
 export function ProductCard({
@@ -23,8 +24,12 @@ export function ProductCard({
 
   const promo = promoForProduct(product.slug);
   const field = fieldFor(index);
-  const formatMoney = useFormatDisplayMoney();
-  const priceLabel = product.price ? formatMoney(product.price.amount) : "Price available to approved merchants";
+  const formatMoney = useFormatCatalogMoney();
+  const canViewWholesalePrices = useCanViewWholesalePrices();
+  const visiblePrice = canViewWholesalePrices ? product.price : null;
+  const priceLabel = visiblePrice
+    ? formatMoney(visiblePrice.amount)
+    : "Price available to approved merchants";
 
   return (
     <Reveal delay={Math.min(index, 3) * 0.07}>
@@ -73,7 +78,7 @@ export function ProductCard({
               <p>MOQ {product.minOrderQuantity}</p>
               <p>{product.inStock ? "Available to supply" : "Currently unavailable"}</p>
               <p>{priceLabel}</p>
-              <span className="sf-product-cta">{product.price ? "Open product" : "View details"}</span>
+              <span className="sf-product-cta">{visiblePrice ? "Open product" : "View details"}</span>
             </div>
           </div>
           <div className="sf-product-meta">

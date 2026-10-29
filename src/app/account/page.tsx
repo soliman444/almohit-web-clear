@@ -37,6 +37,14 @@ export default async function AccountPage() {
         {customer.role === "marketer" && (
           <Link className="sf-btn" href="/account/merchants"><span>My merchants</span><span className="sf-arrow" aria-hidden>→</span></Link>
         )}
+        {customer.role === "buyer" && (
+          <>
+            <Link className="sf-btn" href="/account/buyer"><span>Procurement</span><span className="sf-arrow" aria-hidden>→</span></Link>
+            <Link className="sf-btn is-subtle" href="/account/buyer/suppliers"><span>Suppliers</span></Link>
+            <Link className="sf-btn is-subtle" href="/account/buyer/purchases"><span>Purchases</span></Link>
+            <Link className="sf-btn is-subtle" href="/account/buyer/receipts"><span>Receipts</span></Link>
+          </>
+        )}
         <Link className="sf-btn" href="/account/business"><span>Trade account</span><span className="sf-arrow" aria-hidden>→</span></Link>
         {customer.role === "merchant" && (
           <>

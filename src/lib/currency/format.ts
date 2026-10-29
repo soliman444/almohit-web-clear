@@ -49,6 +49,12 @@ export function formatDisplayMoney(amount: DisplayMoneyInput, currencyCode: stri
   return `${config.symbol} ${convertFromCompany(amount, config.code, catalog)}`;
 }
 
+/** Format an amount already denominated in the selected display currency (no FX). */
+export function formatCatalogMoney(amount: DisplayMoneyInput, currencyCode: string | null | undefined, catalog?: CurrencyCatalog | null) {
+  const config = getCurrencyConfig(currencyCode, catalog);
+  return `${config.symbol} ${decimalText(amount, 2)}`;
+}
+
 export function formatCompanyBase(amount: DisplayMoneyInput, catalog?: CurrencyCatalog | null) {
   const code = companyCurrencyCode(catalog) || "USD";
   return `${code} ${decimalText(amount, 2)}`;

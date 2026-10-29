@@ -97,6 +97,8 @@ export type OdooProductListParams = {
     minMoq?: number;
     maxMoq?: number;
     sort?: OdooProductSort;
+    /** ISO currency code for display prices (e.g. USD). */
+    currency?: string;
   };
 
 export type StorefrontProductPagination = {
@@ -246,7 +248,8 @@ export function buildOdooProductQuery(params: OdooProductListParams = {}): strin
   }
 
   const minMoq = asNonNegativeNumber(params.minMoq);
-  if (minMoq !== null) {
+  // 0 means "no lower bound"; sending it makes Odoo exclude unset MOQ values.
+  if (minMoq !== null && minMoq > 0) {
     search.set("min_moq", String(minMoq));
   }
 
@@ -262,6 +265,11 @@ export function buildOdooProductQuery(params: OdooProductListParams = {}): strin
     params.sort === "oldest"
   ) {
     search.set("sort", params.sort);
+  }
+
+  const currency = params.currency?.trim().toUpperCase();
+  if (currency) {
+    search.set("currency", currency);
   }
 
   return search.toString();
@@ -291,9 +299,14 @@ export async function listOdooProducts(
   return listOdooProductsByQuery(buildOdooProductQuery(params), cookies);
 }
 
-export async function getOdooProduct(id: number, cookies?: OdooCookieAdapter): Promise<StorefrontProduct | null> {
+const getOdooProductByKey = cache(async (
+  id: number,
+  currency: string,
+  cookies?: OdooCookieAdapter,
+): Promise<StorefrontProduct | null> => {
   try {
-    const payload = await odooRequest<OdooCatalogProduct>(`/products/${id}`, {
+    const qs = currency ? `?currency=${encodeURIComponent(currency)}` : "";
+    const payload = await odooRequest<OdooCatalogProduct>(`/products/${id}${qs}`, {
       method: "GET",
       cookies,
       captureSetCookie: false,
@@ -305,6 +318,14 @@ export async function getOdooProduct(id: number, cookies?: OdooCookieAdapter): P
     }
     throw error;
   }
+});
+
+export async function getOdooProduct(
+  id: number,
+  cookies?: OdooCookieAdapter,
+  currency?: string,
+): Promise<StorefrontProduct | null> {
+  return getOdooProductByKey(id, currency?.trim().toUpperCase() || "", cookies);
 }
 
 export const listOdooCategories = cache(async (cookies?: OdooCookieAdapter): Promise<StorefrontCategoryCard[]> => {

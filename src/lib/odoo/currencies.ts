@@ -39,6 +39,7 @@ export function mapOdooDisplayCurrency(payload: OdooDisplayCurrencyPayload): Dis
     ? payload.rate_from_company
     : 0;
   return {
+    id: String(payload.id),
     code,
     label: payload.name || code,
     symbol: payload.symbol || code,

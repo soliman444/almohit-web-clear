@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { duration, ease } from "../../lib/motion";
 import type { DisplayCurrencyCode } from "../../config/currencies";
-import { useFormatDisplayMoney } from "./display-currency";
+import { useFormatCatalogMoney } from "./display-currency";
 import type { StorefrontProduct } from "../../lib/catalog/types";
 import { storefrontCartProductId } from "../../lib/storefront-cart-product";
 import { AddToCartForm } from "./add-to-cart-form";

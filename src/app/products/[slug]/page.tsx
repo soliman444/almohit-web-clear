@@ -7,7 +7,11 @@ import { ProductStoryBlock } from "../../../components/storefront/product-story-
 import { StorefrontShell } from "../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../components/system/storefront-unavailable";
 import { fetchRelatedProducts, fetchStorefrontProduct } from "../../../lib/catalog/products";
-import { getCurrentCustomer, getCurrentCustomerSession } from "../../../lib/session/customer";
+import {
+  getBusinessStatus,
+  getCurrentCustomer,
+  getCurrentCustomerSession,
+} from "../../../lib/session/customer";
 import { safeApiCall } from "../../../lib/odoo/safe";
 import { commerceMessage } from "../../../lib/commerce/errors";
 import { getDisplayCurrency } from "../../../lib/currency/display";
@@ -35,23 +39,29 @@ export default async function ProductDetailsPage({
   const { cart, error, minQty, available } = await searchParams;
   const currency = await getDisplayCurrency();
   const loaded = await safeApiCall(async () => {
-    const [me, product, customer] = await Promise.all([
+    const [me, product, customer, status] = await Promise.all([
       getCurrentCustomerSession(),
       fetchStorefrontProduct(slug),
       getCurrentCustomer(),
+      getBusinessStatus(),
     ]);
     if (!product) return null;
     const related = await fetchRelatedProducts(slug);
+    const showPrices = status.canViewWholesalePrices;
+    const allowAddToCart = Boolean(
+      customer?.role === "merchant" && status.canViewWholesalePrices,
+    );
     return {
       me,
       product,
       related: related.slice(0, 4),
-      approved: customer?.role === "merchant" && customer.state === "approved",
+      showPrices,
+      allowAddToCart,
     };
   });
   if (!loaded.ok) return <StorefrontUnavailable />;
   if (!loaded.data) notFound();
-  const { me, product, related, approved } = loaded.data;
+  const { me, product, related, showPrices, allowAddToCart } = loaded.data;
   const story = productStory(product);
   const shots = productShots(product);
 
@@ -63,8 +73,8 @@ export default async function ProductDetailsPage({
             product={product}
             shots={shots}
             currency={currency}
-            showPrices={approved}
-            allowAddToCart={approved}
+            showPrices={showPrices}
+            allowAddToCart={allowAddToCart}
             requestHref={me.authenticated ? "/account/business" : "/register"}
             notice={cart === "added" ? "Added to cart." : undefined}
             error={error ? commerceMessage(error, minQty, available) : undefined}
