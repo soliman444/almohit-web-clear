@@ -25,7 +25,7 @@ export async function hasOdooSession(cookies?: OdooCookieAdapter): Promise<boole
 }
 
 export async function registerCustomer(
-  input: { name: string; email: string; password: string; phone?: string; role?: "merchant" | "buyer" | "distributor" | "marketer" },
+  input: { name: string; email: string; password: string; phone?: string; role?: "merchant" | "buyer" | "distributor" | "marketer" | "warehouse_manager" },
   cookies?: OdooCookieAdapter,
 ): Promise<CurrentCustomer> {
   const payload = await odooRequest<OdooAuthUserPayload>("/auth/register", {

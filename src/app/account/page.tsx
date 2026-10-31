@@ -29,7 +29,13 @@ export default async function AccountPage() {
         <p className="sf-kicker">{labelTradeStatus(customer.state)}</p>
         <h1>Hello {me.user.name}</h1>
         <p className="sf-count">{me.user.email}</p>
-        <p>Role: {customer.role === "buyer" ? "Buyer" : customer.role === "distributor" ? "Distributor" : customer.role === "marketer" ? "Marketer" : "Merchant"}</p>
+        <p>Role: {
+          customer.role === "buyer" ? "Buyer"
+            : customer.role === "distributor" ? "Distributor"
+              : customer.role === "marketer" ? "Marketer"
+                : customer.role === "warehouse_manager" ? "Warehouse manager"
+                  : "Merchant"
+        }</p>
         <p>Trade status: {labelTradeStatus(customer.state)}</p>
         {customer.role === "distributor" && (
           <Link className="sf-btn" href="/account/deliveries"><span>Deliveries</span><span className="sf-arrow" aria-hidden>→</span></Link>
@@ -43,6 +49,14 @@ export default async function AccountPage() {
             <Link className="sf-btn is-subtle" href="/account/buyer/suppliers"><span>Suppliers</span></Link>
             <Link className="sf-btn is-subtle" href="/account/buyer/purchases"><span>Purchases</span></Link>
             <Link className="sf-btn is-subtle" href="/account/buyer/receipts"><span>Receipts</span></Link>
+          </>
+        )}
+        {customer.role === "warehouse_manager" && (
+          <>
+            <Link className="sf-btn" href="/account/warehouse"><span>Warehouse desk</span><span className="sf-arrow" aria-hidden>→</span></Link>
+            <Link className="sf-btn is-subtle" href="/account/warehouse/stock"><span>Stock</span></Link>
+            <Link className="sf-btn is-subtle" href="/account/warehouse/receipts"><span>Receipts</span></Link>
+            <Link className="sf-btn is-subtle" href="/account/warehouse/issues"><span>Issues</span></Link>
           </>
         )}
         <Link className="sf-btn" href="/account/business"><span>Trade account</span><span className="sf-arrow" aria-hidden>→</span></Link>

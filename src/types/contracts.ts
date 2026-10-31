@@ -141,7 +141,7 @@ export type CustomerProfile = {
   state: TradeStatus;
   businessName: string | null;
   phone: string | null;
-  role: "merchant" | "buyer" | "distributor" | "marketer";
+  role: "merchant" | "buyer" | "distributor" | "marketer" | "warehouse_manager";
 };
 
 export type BusinessStatusResponse = {

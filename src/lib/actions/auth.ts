@@ -14,7 +14,7 @@ export async function registerAction(formData: FormData) {
     name: z.string().min(2).max(120),
     email: z.string().email(),
     password: z.string().min(8).max(128),
-    role: z.enum(["merchant", "buyer", "distributor", "marketer"]),
+    role: z.enum(["merchant", "buyer", "distributor", "marketer", "warehouse_manager"]),
   }).safeParse({
     name: value(formData, "name"),
     email: value(formData, "email").toLowerCase(),

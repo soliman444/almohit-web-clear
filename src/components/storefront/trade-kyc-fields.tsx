@@ -129,6 +129,22 @@ export function TradeKycFields({
 }) {
   const bad = (name: string) => invalidFields.includes(name);
 
+  if (role === "warehouse_manager") {
+    return (
+      <>
+        <section className="sf-biz-block">
+          <h2>Warehouse manager</h2>
+          <div className="sf-biz-grid">
+            <Field label="Phone" name="phone" defaultValue={defaults.phone} required readOnly={readOnly} invalid={bad("phone")} />
+            <Field label="Display name" name="businessName" defaultValue={defaults.businessName} readOnly={readOnly} invalid={bad("businessName")} />
+            <Field label="City" name="city" defaultValue={defaults.city} readOnly={readOnly} invalid={bad("city")} />
+            <Field label="Notes" name="notes" defaultValue={defaults.notes} as="textarea" className="is-span-2" readOnly={readOnly} invalid={bad("notes")} />
+          </div>
+        </section>
+      </>
+    );
+  }
+
   if (role === "buyer" || role === "marketer") {
     return (
       <>

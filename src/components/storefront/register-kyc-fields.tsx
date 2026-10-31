@@ -23,6 +23,7 @@ export function RegisterKycFields({ defaultRole = "merchant" }: { defaultRole?: 
               <option value="buyer">Buyer — sourcing office</option>
               <option value="distributor">Distributor — delivery coverage</option>
               <option value="marketer">Marketer — enroll shop merchants</option>
+              <option value="warehouse_manager">Warehouse manager — stock &amp; dispatch</option>
             </select>
           </label>
         </div>

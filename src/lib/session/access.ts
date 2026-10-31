@@ -58,3 +58,11 @@ export async function requireBuyer() {
   }
   return session;
 }
+
+export async function requireWarehouseManager() {
+  const session = await requireStorefrontApproved();
+  if (session.customer.role !== "warehouse_manager") {
+    redirect("/account");
+  }
+  return session;
+}

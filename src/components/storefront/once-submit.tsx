@@ -8,12 +8,14 @@ export function OnceForm({
   children,
   className,
   style,
+  encType,
   onSubmit,
 }: {
   action?: (formData: FormData) => void | Promise<void>;
   children: ReactNode;
   className?: string;
   style?: CSSProperties;
+  encType?: string;
   onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const submitted = useRef(false);
@@ -22,6 +24,7 @@ export function OnceForm({
       className={className}
       style={style}
       action={action}
+      encType={encType}
       onSubmit={(event) => {
         if (submitted.current) {
           event.preventDefault();

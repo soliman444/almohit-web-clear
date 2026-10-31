@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const APP_ROLES = ["merchant", "buyer", "distributor", "marketer"] as const;
+export const APP_ROLES = ["merchant", "buyer", "distributor", "marketer", "warehouse_manager"] as const;
 export type AppRole = (typeof APP_ROLES)[number];
 
 export type ParsedTradeKyc = {
@@ -42,6 +42,13 @@ const officeSchema = z.object({
   notes: z.string().max(1000).optional(),
 });
 
+const warehouseSchema = z.object({
+  phone: z.string().min(5).max(30),
+  businessName: z.string().max(160).optional(),
+  city: z.string().max(120).optional(),
+  notes: z.string().max(1000).optional(),
+});
+
 export function formValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
@@ -75,6 +82,30 @@ export function parseTradeKyc(
     return parsed.success
       ? { success: true, data: parsed.data }
       : { success: false, fields: zodFieldNames(parsed.error) };
+  }
+
+  if (role === "warehouse_manager") {
+    const parsed = warehouseSchema.safeParse({
+      phone: formValue(formData, "phone"),
+      businessName: formValue(formData, "businessName") || undefined,
+      city: formValue(formData, "city") || undefined,
+      notes: formValue(formData, "notes") || undefined,
+    });
+    if (!parsed.success) {
+      return { success: false, fields: zodFieldNames(parsed.error) };
+    }
+    return {
+      success: true,
+      data: {
+        businessName: parsed.data.businessName || "",
+        taxNumber: "",
+        city: parsed.data.city || "",
+        address: "",
+        managerName: "",
+        phone: parsed.data.phone,
+        notes: parsed.data.notes,
+      },
+    };
   }
 
   const parsed = officeSchema.safeParse({

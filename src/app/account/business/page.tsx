@@ -72,6 +72,16 @@ export default async function BusinessPage({
         submit: "Submit marketer request",
         kyc: "Fill your name, coverage area, city, contact, and base address.",
       }
+      : role === "warehouse_manager"
+      ? {
+        kicker: "Warehouse",
+        title: "Warehouse manager account",
+        intro: locked
+          ? "Contact details are locked after submission. Warehouse assignment is managed in Odoo."
+          : "Phone is required for warehouse approval. Warehouses are assigned after review in Odoo.",
+        submit: "Submit warehouse request",
+        kyc: "Provide a reachable phone number. Display name and city are optional.",
+      }
       : {
         kicker: "Merchant",
         title: "Merchant account",

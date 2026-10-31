@@ -69,6 +69,23 @@ export function parseTradeFormError(query: FormErrorQuery) {
   return parseFormErrorQuery(query, TRADE_MESSAGES);
 }
 
+const WAREHOUSE_MESSAGES: Record<string, string> = {
+  qty: "Enter valid quantities for each line.",
+  lines: "Add at least one valid line.",
+  warehouse: "Choose a warehouse.",
+  file: "Upload a CSV or XLSX inventory file.",
+  invalid: "Check the highlighted fields and try again.",
+  notfound: "The requested record was not found.",
+  unavailable: "Service temporarily unavailable. Please try again shortly.",
+  failed: "Could not complete this warehouse action. Try again.",
+  duplicate: "This inventory file was already imported.",
+  permission: "You do not have permission for this warehouse action.",
+};
+
+export function parseWarehouseFormError(query: FormErrorQuery) {
+  return parseFormErrorQuery(query, WAREHOUSE_MESSAGES);
+}
+
 export function formErrorHref(
   path: string,
   error: { code: string; message?: string; fields?: string[] },
