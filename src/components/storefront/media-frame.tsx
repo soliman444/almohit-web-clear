@@ -109,6 +109,7 @@ export function MediaFrame({
           alt={alt}
           fill
           sizes={sizes}
+          quality={90}
           className="sf-photo"
           priority={priority}
           unoptimized={resolved.startsWith("http") && !isKnownRemote(resolved)}

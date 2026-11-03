@@ -78,8 +78,11 @@ const WAREHOUSE_MESSAGES: Record<string, string> = {
   notfound: "The requested record was not found.",
   unavailable: "Service temporarily unavailable. Please try again shortly.",
   failed: "Could not complete this warehouse action. Try again.",
-  duplicate: "This inventory file was already imported.",
+  duplicate: "This request was already processed.",
   permission: "You do not have permission for this warehouse action.",
+  stock: "Not enough stock on the source warehouse for one or more lines.",
+  busy: "Another request is creating this transfer. Retry shortly.",
+  payment: "Payment must be cleared before warehouse dispatch.",
 };
 
 export function parseWarehouseFormError(query: FormErrorQuery) {

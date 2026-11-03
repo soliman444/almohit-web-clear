@@ -1,6 +1,12 @@
+import { cache } from "react";
 import type { AuthMeResponse, BusinessStatusResponse, CustomerProfile } from "@/types/contracts";
 
-export async function getCurrentCustomerSession(): Promise<AuthMeResponse> {
+const noAccess: BusinessStatusResponse = {
+  state: null,
+  canViewWholesalePrices: false,
+};
+
+export const getCurrentCustomerSession = cache(async (): Promise<AuthMeResponse> => {
   const odoo = await import("../odoo/auth");
   if (await odoo.getOdooStaffUser()) {
     return { authenticated: false, user: null };
@@ -9,39 +15,33 @@ export async function getCurrentCustomerSession(): Promise<AuthMeResponse> {
     return odoo.getAuthMe();
   }
   return { authenticated: false, user: null };
-}
+});
 
-const noAccess: BusinessStatusResponse = {
-  state: null,
-  canViewWholesalePrices: false,
-};
-
-export async function getCurrentCustomer(): Promise<CustomerProfile | null> {
+export const getCurrentCustomer = cache(async (): Promise<CustomerProfile | null> => {
   const odoo = await import("../odoo/auth");
   if (await odoo.getOdooStaffUser()) return null;
   if (!(await odoo.hasOdooSession())) return null;
   const customer = await odoo.getCurrentCustomer();
   return customer ? odoo.toCustomerProfile(customer) : null;
-}
+});
 
-export async function getBusinessStatus(): Promise<BusinessStatusResponse> {
+export const getBusinessStatus = cache(async (): Promise<BusinessStatusResponse> => {
   try {
     const odoo = await import("../odoo/auth");
     if (await odoo.getOdooStaffUser()) {
       return noAccess;
     }
     if (!(await odoo.hasOdooSession())) return noAccess;
+    // Reuse the same cached /auth/me as getCurrentCustomer — do not call Odoo twice.
     const customer = await odoo.getCurrentCustomer();
     if (!customer) return noAccess;
-    // Match Odoo catalog `may_see_price`: approved trade status only.
     const canViewWholesalePrices = customer.tradeStatus === "approved";
     return {
       state: customer.tradeStatus,
-      // UI capability only. Odoo remains the price authority.
       canViewWholesalePrices,
     };
   } catch {
     // Shell/header must stay up when Odoo is briefly unreachable.
     return noAccess;
   }
-}
+});

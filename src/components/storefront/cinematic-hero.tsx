@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { stagger } from "../../lib/motion";
+import { BRAND } from "../../lib/brand";
+import { BrandLogo } from "./brand-logo";
 import { ButtonLink } from "./button-link";
 import { HeroVideo } from "./hero-video";
 
@@ -56,9 +58,11 @@ export function CinematicHero({
       <div className="sf-hero-shade" aria-hidden />
 
       <div className="sf-hero-copy">
+        <div className="sf-hero-brand">
+          <BrandLogo href="" variant="hero" priority />
+        </div>
         <div className="sf-pills">
           <span className="sf-pill">Featured catalog</span>
-          <span className="sf-pill">Oct 3, 2026</span>
           <span className="sf-pill">Trade after approval</span>
         </div>
         <h1 className="sf-hero-title">
@@ -80,7 +84,7 @@ export function CinematicHero({
         </h1>
         <div className="sf-hero-meta">
           <div className="sf-hero-credits">
-            <span>Almohit</span>
+            <span>{BRAND.shortName}</span>
             {collections.slice(0, 2).map((item) => (
               <a key={item.href} href={item.href}>{item.name}</a>
             ))}

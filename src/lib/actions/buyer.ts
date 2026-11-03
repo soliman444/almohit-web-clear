@@ -10,7 +10,6 @@ import {
   createBuyerProduct,
   createBuyerPurchase,
   createBuyerSupplier,
-  receiveBuyerReceipt,
   updateBuyerSupplier,
 } from "../odoo/buyer";
 import { mapApiClientFormError, redirectFormError } from "../form-errors";
@@ -278,37 +277,3 @@ export async function confirmBuyerPurchaseAction(formData: FormData) {
   }
 }
 
-export async function receiveBuyerReceiptAction(formData: FormData) {
-  await requireBuyer();
-  const pickingId = parseOdooRecordId(value(formData, "pickingId"));
-  if (!pickingId) {
-    redirectFormError("/account/buyer/receipts", { code: "notfound" });
-  }
-
-  const moveIds = formData.getAll("moveId").map((entry) => String(entry).trim());
-  const quantities = formData.getAll("quantityDone").map((entry) => String(entry).trim());
-  const lines = moveIds.flatMap((moveId, index) => {
-    const id = Number(moveId);
-    const quantityDone = Number(quantities[index]);
-    if (!Number.isFinite(id) || id < 1) return [];
-    if (!Number.isFinite(quantityDone) || quantityDone < 0) return [];
-    return [{ moveId: id, quantityDone }];
-  });
-
-  if (lines.length === 0) {
-    redirectFormError(`/account/buyer/receipts/${pickingId}`, {
-      code: "qty",
-      fields: ["quantityDone"],
-    });
-  }
-
-  try {
-    await receiveBuyerReceipt(pickingId, lines);
-    revalidatePath("/account/buyer/receipts");
-    revalidatePath(`/account/buyer/receipts/${pickingId}`);
-    revalidatePath("/account/buyer/purchases");
-    redirect(`/account/buyer/receipts/${pickingId}?received=1`);
-  } catch (error) {
-    mapBuyerError(error, `/account/buyer/receipts/${pickingId}`);
-  }
-}

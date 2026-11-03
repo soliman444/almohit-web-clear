@@ -44,6 +44,7 @@ export default async function WarehouseReceiptDetailPage({
   const query = await searchParams;
   const formError = parseWarehouseFormError(query);
   const qtyInvalid = Boolean(formError?.fields.includes("quantityDone") || formError?.code === "qty");
+  const warehouseInvalid = Boolean(formError?.fields.includes("warehouseId"));
   const loaded = await safeWarehouseCall(() => loadReceipt(id));
   if (!loaded.ok) {
     if (loaded.reason === "WAREHOUSE_ASSIGNMENT_REQUIRED") {
@@ -53,6 +54,12 @@ export default async function WarehouseReceiptDetailPage({
   }
   const receipt = loaded.data;
   const canReceive = receipt.state !== "done" && receipt.state !== "cancel";
+  const defaultWarehouseId =
+    receipt.suggestedWarehouse?.id
+    || receipt.currentWarehouse?.id
+    || receipt.warehouse?.id
+    || receipt.availableWarehouses[0]?.id
+    || "";
 
   return (
     <StorefrontShell>
@@ -88,6 +95,7 @@ export default async function WarehouseReceiptDetailPage({
                     <tr>
                       <th scope="col">Product</th>
                       <th scope="col">Destination</th>
+                      <th scope="col">Warehouse</th>
                       <th scope="col" className="is-num">Ordered</th>
                       <th scope="col" className="is-num">Receive now</th>
                     </tr>
@@ -101,6 +109,19 @@ export default async function WarehouseReceiptDetailPage({
                           <input type="hidden" name="moveId" value={line.moveId} />
                         </th>
                         <td>{line.destinationLocation?.name || "—"}</td>
+                        <td className={warehouseInvalid ? "is-invalid" : undefined}>
+                          <select
+                            name="warehouseId"
+                            required
+                            defaultValue={defaultWarehouseId}
+                            aria-invalid={warehouseInvalid || undefined}
+                          >
+                            <option value="" disabled>Select warehouse</option>
+                            {receipt.availableWarehouses.map((wh) => (
+                              <option key={wh.id} value={wh.id}>{wh.name}</option>
+                            ))}
+                          </select>
+                        </td>
                         <td className="is-num">
                           {line.orderedQty}{line.uom ? ` ${line.uom.name}` : ""}
                         </td>

@@ -26,6 +26,25 @@ export async function StorefrontHeader({
   currencies: DisplayCurrencyConfig[];
   children?: ReactNode;
 }) {
+  const signedInCookie = await hasStorefrontSessionCookie();
+
+  // Guests: skip /auth/me and cart entirely — those calls were timing out on refresh.
+  if (!signedInCookie) {
+    return (
+      <CartSessionProvider initialCart={null}>
+        <HeaderBar
+          transparent={transparent}
+          signedIn={false}
+          canBuy={false}
+          cart={null}
+          currency={currency}
+          currencies={currencies}
+        />
+        {children}
+      </CartSessionProvider>
+    );
+  }
+
   const result = await safeApiCall(async () => {
     const staff = await getCurrentStaff();
     if (staff && isStaffUser(staff)) {
@@ -54,7 +73,7 @@ export async function StorefrontHeader({
       <CartSessionProvider initialCart={null}>
         <HeaderBar
           transparent={transparent}
-          signedIn={await hasStorefrontSessionCookie()}
+          signedIn={signedInCookie}
           canBuy={false}
           cart={null}
           currency={currency}

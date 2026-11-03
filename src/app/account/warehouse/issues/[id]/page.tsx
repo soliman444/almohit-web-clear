@@ -6,9 +6,12 @@ import { StorefrontShell } from "../../../../../components/storefront/shell";
 import { WarehouseUnassigned } from "../../../../../components/storefront/warehouse-unassigned";
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import { dispatchWarehouseIssueAction } from "../../../../../lib/actions/warehouse";
-import { parseWarehouseFormError, type FormErrorQuery } from "../../../../../lib/form-errors";
+import { fieldClassName, parseWarehouseFormError, type FormErrorQuery } from "../../../../../lib/form-errors";
 import { ApiClientError } from "../../../../../lib/odoo/errors";
-import { getWarehouseIssue } from "../../../../../lib/odoo/warehouse";
+import {
+  getWarehouseIssue,
+  listWarehouseDistributors,
+} from "../../../../../lib/odoo/warehouse";
 import { parseOdooRecordId } from "../../../../../lib/odoo/catalog";
 import { safeWarehouseCall } from "../../../../../lib/odoo/safe";
 import { requireWarehouseManager } from "../../../../../lib/session/access";
@@ -44,19 +47,35 @@ export default async function WarehouseIssueDetailPage({
   const query = await searchParams;
   const formError = parseWarehouseFormError(query);
   const qtyInvalid = Boolean(formError?.fields.includes("quantityDone") || formError?.code === "qty");
-  const loaded = await safeWarehouseCall(() => loadIssue(id));
+  const warehouseInvalid = Boolean(formError?.fields.includes("warehouseId"));
+  const loaded = await safeWarehouseCall(async () => {
+    const issue = await loadIssue(id);
+    let distributors: Awaited<ReturnType<typeof listWarehouseDistributors>> = [];
+    try {
+      distributors = await listWarehouseDistributors();
+    } catch {
+      distributors = [];
+    }
+    return { issue, distributors };
+  });
   if (!loaded.ok) {
     if (loaded.reason === "WAREHOUSE_ASSIGNMENT_REQUIRED") {
       return <WarehouseUnassigned />;
     }
     return <StorefrontUnavailable />;
   }
-  const issue = loaded.data;
+  const { issue, distributors } = loaded.data;
   const canDispatch =
     issue.dispatchState === "pending"
     && issue.state !== "done"
     && issue.state !== "cancel"
     && issue.paymentOk;
+  const defaultWarehouseId =
+    issue.suggestedWarehouse?.id
+    || issue.currentWarehouse?.id
+    || issue.warehouse?.id
+    || issue.availableWarehouses[0]?.id
+    || "";
 
   return (
     <StorefrontShell>
@@ -64,7 +83,7 @@ export default async function WarehouseIssueDetailPage({
         <Link className="sf-text-link" href="/account/warehouse/issues">All issues</Link>
         <p className="sf-kicker">Issue</p>
         <h1>{issue.name}</h1>
-        {query.dispatched && <p className="sf-invoice-banner" role="status">Dispatched to distributor.</p>}
+        {query.dispatched && <p className="sf-invoice-banner" role="status">Dispatched to distributor staging.</p>}
         {!issue.paymentOk && (
           <p className="sf-invoice-banner sf-wh-banner-warn" role="status">
             Payment is not cleared yet — dispatch stays blocked.
@@ -90,12 +109,28 @@ export default async function WarehouseIssueDetailPage({
           {canDispatch ? (
             <OnceForm action={dispatchWarehouseIssueAction}>
               <input type="hidden" name="pickingId" value={issue.id} />
+              {distributors.length > 0 && (
+                <label className={fieldClassName("sf-biz-field", formError?.fields, "distributorUserId")}>
+                  Distributor (optional)
+                  <select
+                    name="distributorUserId"
+                    defaultValue={issue.distributorUserId ?? ""}
+                    aria-invalid={formError?.fields.includes("distributorUserId") || undefined}
+                  >
+                    <option value="">Keep current assignee</option>
+                    {distributors.map((row) => (
+                      <option key={row.id} value={row.id}>{row.name}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <div className="sf-cart-table-wrap">
                 <table className="sf-cart-table">
                   <thead>
                     <tr>
                       <th scope="col">Product</th>
                       <th scope="col">Source</th>
+                      <th scope="col">Warehouse</th>
                       <th scope="col" className="is-num">Ordered</th>
                       <th scope="col" className="is-num">Reserved</th>
                       <th scope="col" className="is-num">Dispatch now</th>
@@ -110,6 +145,25 @@ export default async function WarehouseIssueDetailPage({
                           <input type="hidden" name="moveId" value={line.moveId} />
                         </th>
                         <td>{line.sourceLocation?.name || "—"}</td>
+                        <td className={warehouseInvalid ? "is-invalid" : undefined}>
+                          <select
+                            name="warehouseId"
+                            required
+                            defaultValue={defaultWarehouseId}
+                            aria-invalid={warehouseInvalid || undefined}
+                          >
+                            <option value="" disabled>Select warehouse</option>
+                            {issue.availableWarehouses.map((wh) => {
+                              const hint = wh.lines?.find((row) => row.productId === line.product.id);
+                              const freeLabel = hint?.freeQty != null ? ` · free ${hint.freeQty}` : "";
+                              return (
+                                <option key={wh.id} value={wh.id}>
+                                  {wh.name}{freeLabel}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </td>
                         <td className="is-num">
                           {line.orderedQty}{line.uom ? ` ${line.uom.name}` : ""}
                         </td>
@@ -135,7 +189,7 @@ export default async function WarehouseIssueDetailPage({
                 </table>
               </div>
               <OnceSubmit className="sf-btn" pendingLabel="Dispatching…">
-                <span>Dispatch to distributor</span>
+                <span>Dispatch to output</span>
               </OnceSubmit>
             </OnceForm>
           ) : (

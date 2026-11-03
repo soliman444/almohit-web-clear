@@ -1,12 +1,14 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ProductFacts } from "../../../components/storefront/product-facts";
 import { ProductDetailMedia } from "../../../components/storefront/product-detail-media";
-import { ProductRelated } from "../../../components/storefront/product-related";
 import { ProductSpecs } from "../../../components/storefront/product-specs";
 import { ProductStoryBlock } from "../../../components/storefront/product-story-block";
+import { RelatedProductsSection } from "../../../components/storefront/related-products-section";
 import { StorefrontShell } from "../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../components/system/storefront-unavailable";
-import { fetchRelatedProducts, fetchStorefrontProduct } from "../../../lib/catalog/products";
+import { fetchStorefrontProduct } from "../../../lib/catalog/products";
+import { parseOdooRecordId } from "../../../lib/odoo/catalog";
 import {
   getBusinessStatus,
   getCurrentCustomer,
@@ -37,31 +39,36 @@ export default async function ProductDetailsPage({
 }) {
   const { slug } = await params;
   const { cart, error, minQty, available } = await searchParams;
-  const currency = await getDisplayCurrency();
+  const productId = parseOdooRecordId(slug);
+  if (productId == null) notFound();
+
   const loaded = await safeApiCall(async () => {
-    const [me, product, customer, status] = await Promise.all([
+    const currencyPromise = getDisplayCurrency();
+    // Auth runs in parallel with currency; product starts as soon as currency resolves.
+    const [currency, me, customer, status, product] = await Promise.all([
+      currencyPromise,
       getCurrentCustomerSession(),
-      fetchStorefrontProduct(slug),
       getCurrentCustomer(),
       getBusinessStatus(),
+      currencyPromise.then((code) => fetchStorefrontProduct(slug, code)),
     ]);
     if (!product) return null;
-    const related = await fetchRelatedProducts(slug);
-    const showPrices = status.canViewWholesalePrices;
-    const allowAddToCart = Boolean(
-      customer?.role === "merchant" && status.canViewWholesalePrices,
-    );
+
     return {
       me,
       product,
-      related: related.slice(0, 4),
-      showPrices,
-      allowAddToCart,
+      currency,
+      showPrices: status.canViewWholesalePrices,
+      allowAddToCart: Boolean(
+        customer?.role === "merchant" && status.canViewWholesalePrices,
+      ),
     };
   });
+
   if (!loaded.ok) return <StorefrontUnavailable />;
   if (!loaded.data) notFound();
-  const { me, product, related, showPrices, allowAddToCart } = loaded.data;
+
+  const { me, product, currency, showPrices, allowAddToCart } = loaded.data;
   const story = productStory(product);
   const shots = productShots(product);
 
@@ -88,7 +95,10 @@ export default async function ProductDetailsPage({
         )}
 
         <ProductSpecs product={product} />
-        <ProductRelated products={related} />
+
+        <Suspense fallback={null}>
+          <RelatedProductsSection product={product} currency={currency} />
+        </Suspense>
       </article>
     </StorefrontShell>
   );

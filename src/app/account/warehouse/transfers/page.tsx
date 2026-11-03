@@ -38,7 +38,7 @@ export default async function WarehouseTransfersPage({
         <Link className="sf-text-link" href="/account/warehouse">Warehouse desk</Link>
         <p className="sf-kicker">Transfers</p>
         <h1>Inter-warehouse transfers.</h1>
-        <p className="muted">Request, dispatch, and receive stock between warehouses.</p>
+        <p className="muted">Create transfers (auto-dispatch to transit) and receive at the destination.</p>
 
         <div className="sf-wh-toolbar">
           <div className="sf-wh-tabs" role="tablist" aria-label="Transfer direction">

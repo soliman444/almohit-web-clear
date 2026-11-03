@@ -36,6 +36,16 @@ export type WhStockRow = {
   quantity: number;
   reserved: number;
   available: number;
+  stockRole?: string | null;
+};
+
+export type WhAvailableWarehouse = WhNamed & {
+  lines?: Array<{
+    productId: string;
+    productName: string;
+    orderedQty: number;
+    freeQty: number | null;
+  }>;
 };
 
 export type WhReceiptSummary = {
@@ -66,6 +76,9 @@ export type WhReceipt = WhReceiptSummary & {
   lines: WhReceiptLine[];
   backorderId: string | null;
   backorders: WhNamed[];
+  availableWarehouses: WhAvailableWarehouse[];
+  suggestedWarehouse: WhNamed | null;
+  currentWarehouse: WhNamed | null;
 };
 
 export type WhIssueSummary = {
@@ -97,6 +110,10 @@ export type WhIssueLine = {
 export type WhIssue = WhIssueSummary & {
   lines: WhIssueLine[];
   dispatchPickingId: string | null;
+  availableWarehouses: WhAvailableWarehouse[];
+  suggestedWarehouse: WhNamed | null;
+  currentWarehouse: WhNamed | null;
+  distributorUserId: string | null;
 };
 
 export type WhTransferLine = {
@@ -235,6 +252,28 @@ function qs(params: Record<string, string | number | undefined | null>) {
   return text ? `?${text}` : "";
 }
 
+function mapAvailableWarehouse(row: {
+  id: number;
+  name: string;
+  lines?: Array<{
+    product_id: number;
+    product_name: string;
+    ordered_qty: number;
+    free_qty?: number | null;
+  }>;
+}): WhAvailableWarehouse {
+  return {
+    id: String(row.id),
+    name: row.name,
+    lines: (row.lines ?? []).map((line) => ({
+      productId: String(line.product_id),
+      productName: line.product_name,
+      orderedQty: Number(line.ordered_qty ?? 0),
+      freeQty: line.free_qty == null ? null : Number(line.free_qty),
+    })),
+  };
+}
+
 function mapReceipt(row: {
   id: number;
   name: string;
@@ -258,6 +297,9 @@ function mapReceipt(row: {
   }>;
   backorder_id?: number | null;
   backorders?: Array<{ id: number; name: string }>;
+  available_warehouses?: Array<{ id: number; name: string }>;
+  suggested_warehouse?: OdooNamed;
+  current_warehouse?: OdooNamed;
 }): WhReceipt {
   return {
     id: String(row.id),
@@ -282,6 +324,9 @@ function mapReceipt(row: {
     })),
     backorderId: row.backorder_id != null ? String(row.backorder_id) : null,
     backorders: (row.backorders ?? []).map((bo) => ({ id: String(bo.id), name: bo.name })),
+    availableWarehouses: (row.available_warehouses ?? []).map(mapAvailableWarehouse),
+    suggestedWarehouse: named(row.suggested_warehouse),
+    currentWarehouse: named(row.current_warehouse),
   };
 }
 
@@ -297,6 +342,7 @@ function mapIssue(row: {
   origin?: string | null;
   warehouse?: OdooNamed;
   payment_ok?: boolean;
+  distributor_user_id?: number | null;
   lines?: Array<{
     move_id: number;
     product: { id: number; name: string; default_code?: string | null };
@@ -309,6 +355,18 @@ function mapIssue(row: {
     destination_location?: OdooNamed;
   }>;
   dispatch_picking_id?: number | null;
+  available_warehouses?: Array<{
+    id: number;
+    name: string;
+    lines?: Array<{
+      product_id: number;
+      product_name: string;
+      ordered_qty: number;
+      free_qty?: number | null;
+    }>;
+  }>;
+  suggested_warehouse?: OdooNamed;
+  current_warehouse?: OdooNamed;
 }): WhIssue {
   return {
     id: String(row.id),
@@ -334,6 +392,11 @@ function mapIssue(row: {
       destinationLocation: named(line.destination_location),
     })),
     dispatchPickingId: row.dispatch_picking_id != null ? String(row.dispatch_picking_id) : null,
+    availableWarehouses: (row.available_warehouses ?? []).map(mapAvailableWarehouse),
+    suggestedWarehouse: named(row.suggested_warehouse),
+    currentWarehouse: named(row.current_warehouse),
+    distributorUserId:
+      row.distributor_user_id != null ? String(row.distributor_user_id) : null,
   };
 }
 
@@ -531,6 +594,7 @@ export async function listWarehouseStock(
     quantity?: number;
     reserved_quantity?: number;
     available_quantity?: number;
+    stock_role?: string | null;
   }>>(
     `/warehouse/stock${qs({
       warehouse_id: params.warehouseId,
@@ -548,6 +612,7 @@ export async function listWarehouseStock(
     quantity: Number(row.quantity ?? 0),
     reserved: Number(row.reserved_quantity ?? 0),
     available: Number(row.available_quantity ?? row.quantity ?? 0),
+    stockRole: row.stock_role ?? null,
   }));
 }
 
@@ -566,7 +631,15 @@ export async function listWarehouseReceipts(
   );
   return pageOf(data, (row) => {
     const full = mapReceipt(row);
-    const { lines: _lines, backorderId: _b, backorders: _bo, ...summary } = full;
+    const {
+      lines: _lines,
+      backorderId: _b,
+      backorders: _bo,
+      availableWarehouses: _aw,
+      suggestedWarehouse: _sw,
+      currentWarehouse: _cw,
+      ...summary
+    } = full;
     return summary;
   });
 }
@@ -578,7 +651,7 @@ export async function getWarehouseReceipt(id: number, cookies?: OdooCookieAdapte
 
 export async function receiveWarehouseReceipt(
   id: number,
-  lines: Array<{ moveId: string | number; quantityDone: number }>,
+  lines: Array<{ moveId: string | number; quantityDone: number; warehouseId: number }>,
   cookies?: OdooCookieAdapter,
 ): Promise<WhReceipt> {
   const data = await odooRequest<Parameters<typeof mapReceipt>[0]>(`/warehouse/receipts/${id}/receive`, {
@@ -587,6 +660,7 @@ export async function receiveWarehouseReceipt(
       lines: lines.map((line) => ({
         move_id: Number(line.moveId),
         quantity_done: line.quantityDone,
+        warehouse_id: line.warehouseId,
       })),
     },
     cookies,
@@ -608,7 +682,15 @@ export async function listWarehouseIssues(
   );
   return pageOf(data, (row) => {
     const full = mapIssue(row);
-    const { lines: _lines, dispatchPickingId: _d, ...summary } = full;
+    const {
+      lines: _lines,
+      dispatchPickingId: _d,
+      availableWarehouses: _aw,
+      suggestedWarehouse: _sw,
+      currentWarehouse: _cw,
+      distributorUserId: _du,
+      ...summary
+    } = full;
     return summary;
   });
 }
@@ -618,21 +700,35 @@ export async function getWarehouseIssue(id: number, cookies?: OdooCookieAdapter)
   return mapIssue(data);
 }
 
+export async function listWarehouseDistributors(
+  cookies?: OdooCookieAdapter,
+): Promise<WhNamed[]> {
+  const data = await odooRequest<{ items?: Array<{ id: number; name: string }> }>(
+    "/warehouse/distributors",
+    { cookies },
+  );
+  return (data.items ?? []).map((row) => ({ id: String(row.id), name: row.name }));
+}
+
 export async function dispatchWarehouseIssue(
   id: number,
-  lines: Array<{ moveId: string | number; quantityDone: number; locationId?: string | number }>,
-  cookies?: OdooCookieAdapter,
+  lines: Array<{ moveId: string | number; quantityDone: number; warehouseId: number }>,
+  options?: { distributorUserId?: number; cookies?: OdooCookieAdapter },
 ): Promise<WhIssue> {
+  const body: Record<string, unknown> = {
+    lines: lines.map((line) => ({
+      move_id: Number(line.moveId),
+      quantity_done: line.quantityDone,
+      warehouse_id: line.warehouseId,
+    })),
+  };
+  if (options?.distributorUserId) {
+    body.distributor_user_id = options.distributorUserId;
+  }
   const data = await odooRequest<Parameters<typeof mapIssue>[0]>(`/warehouse/issues/${id}/dispatch`, {
     method: "POST",
-    body: {
-      lines: lines.map((line) => ({
-        move_id: Number(line.moveId),
-        quantity_done: line.quantityDone,
-        ...(line.locationId ? { location_id: Number(line.locationId) } : {}),
-      })),
-    },
-    cookies,
+    body,
+    cookies: options?.cookies,
   });
   return mapIssue(data);
 }
@@ -667,7 +763,8 @@ export async function createWarehouseTransfer(
     sourceWarehouseId: number;
     destWarehouseId: number;
     note?: string;
-    lines: Array<{ productId: number; quantity: number; uomId?: number; locationId?: number }>;
+    idempotencyKey?: string;
+    lines: Array<{ productId: number; quantity: number; uomId?: number }>;
   },
   cookies?: OdooCookieAdapter,
 ): Promise<WhTransfer> {
@@ -677,33 +774,13 @@ export async function createWarehouseTransfer(
       source_warehouse_id: input.sourceWarehouseId,
       dest_warehouse_id: input.destWarehouseId,
       note: input.note || undefined,
+      ...(input.idempotencyKey ? { idempotency_key: input.idempotencyKey } : {}),
       lines: input.lines.map((line) => ({
         product_id: line.productId,
         quantity: line.quantity,
         ...(line.uomId ? { uom_id: line.uomId } : {}),
-        ...(line.locationId ? { location_id: line.locationId } : {}),
       })),
     },
-    cookies,
-  });
-  return mapTransfer(data);
-}
-
-export async function dispatchWarehouseTransfer(
-  id: number,
-  lines?: Array<{ lineId: string | number; quantity: number }>,
-  cookies?: OdooCookieAdapter,
-): Promise<WhTransfer> {
-  const data = await odooRequest<Parameters<typeof mapTransfer>[0]>(`/warehouse/transfers/${id}/dispatch`, {
-    method: "POST",
-    body: lines
-      ? {
-          lines: lines.map((line) => ({
-            line_id: Number(line.lineId),
-            quantity: line.quantity,
-          })),
-        }
-      : {},
     cookies,
   });
   return mapTransfer(data);

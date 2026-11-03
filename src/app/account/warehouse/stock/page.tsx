@@ -63,6 +63,7 @@ export default async function WarehouseStockPage({
                 <th scope="col">Product</th>
                 <th scope="col">Warehouse</th>
                 <th scope="col">Location</th>
+                <th scope="col">Role</th>
                 <th scope="col" className="is-num">On hand</th>
                 <th scope="col" className="is-num">Reserved</th>
                 <th scope="col" className="is-num">Available</th>
@@ -71,7 +72,7 @@ export default async function WarehouseStockPage({
             <tbody>
               {stock.items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="muted">No stock rows for this filter.</td>
+                  <td colSpan={7} className="muted">No stock rows for this filter.</td>
                 </tr>
               ) : stock.items.map((row) => (
                 <tr key={row.id}>
@@ -84,6 +85,7 @@ export default async function WarehouseStockPage({
                   </th>
                   <td>{row.warehouse?.name || "—"}</td>
                   <td>{row.location?.name || "—"}</td>
+                  <td>{row.stockRole ? row.stockRole.replaceAll("_", " ") : "—"}</td>
                   <td className="is-num">
                     {row.quantity}{row.product.uom ? ` ${row.product.uom.name}` : ""}
                   </td>

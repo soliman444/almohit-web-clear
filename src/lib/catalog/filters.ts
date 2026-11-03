@@ -32,13 +32,13 @@ export function parseCatalogPage(value?: string): number {
   return Number.isInteger(page) && page > 0 ? page : 1;
 }
 
-export function parseCatalogSort(value?: string): OdooProductSort | undefined {
+export function parseCatalogSort(value?: string): OdooProductSort {
   return value === "name_asc" ||
     value === "name_desc" ||
     value === "newest" ||
     value === "oldest"
     ? value
-    : undefined;
+    : "newest";
 }
 
 /** Empty / invalid → undefined. `min_moq=0` is treated as no lower bound. */
@@ -67,7 +67,9 @@ export function storefrontCatalogHref(
     const raw = merged[key]?.trim();
     if (!raw) continue;
     if (key === "page" && parseCatalogPage(raw) <= 1) continue;
-    if (key === "sort" && !parseCatalogSort(raw)) continue;
+    if (key === "sort" && (raw !== "name_asc" && raw !== "name_desc" && raw !== "newest" && raw !== "oldest")) continue;
+    // Keep URLs clean: newest is the implicit default.
+    if (key === "sort" && raw === "newest") continue;
     params.set(key, raw);
   }
   const search = params.toString();

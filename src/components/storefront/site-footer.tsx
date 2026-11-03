@@ -1,9 +1,13 @@
 import Link from "next/link";
+import { BRAND } from "../../lib/brand";
+import { BrandLogo } from "./brand-logo";
 
 export function SiteFooter() {
   return (
     <footer className="sf-footer">
-      <p className="sf-footer-brand">almohit.</p>
+      <div className="sf-footer-brand-wrap">
+        <BrandLogo variant="footer" />
+      </div>
       <div className="sf-footer-top">
         <div>
           <p>A wholesale catalog you can browse first. Trade prices after approval.</p>
@@ -29,7 +33,7 @@ export function SiteFooter() {
       </div>
       <p className="sf-footer-final">The product first. The price later.</p>
       <div className="sf-footer-bottom">
-        <span>© {new Date().getFullYear()} Almohit</span>
+        <span>© {new Date().getFullYear()} {BRAND.name}</span>
         <span>Trade prices after approval</span>
       </div>
     </footer>

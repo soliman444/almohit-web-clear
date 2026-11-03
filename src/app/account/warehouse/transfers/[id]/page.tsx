@@ -7,7 +7,6 @@ import { WarehouseUnassigned } from "../../../../../components/storefront/wareho
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import {
   cancelWarehouseTransferAction,
-  dispatchWarehouseTransferAction,
   receiveWarehouseTransferAction,
 } from "../../../../../lib/actions/warehouse";
 import { parseWarehouseFormError, type FormErrorQuery } from "../../../../../lib/form-errors";
@@ -43,7 +42,6 @@ export default async function WarehouseTransferDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<FormErrorQuery & {
     created?: string;
-    dispatched?: string;
     received?: string;
     cancelled?: string;
   }>;
@@ -61,7 +59,6 @@ export default async function WarehouseTransferDetailPage({
     return <StorefrontUnavailable />;
   }
   const transfer = loaded.data;
-  const canDispatch = transfer.state === "requested";
   const canReceive = ["dispatched", "partially_received", "discrepancy"].includes(transfer.state);
   const canCancel = transfer.state === "requested";
 
@@ -71,8 +68,11 @@ export default async function WarehouseTransferDetailPage({
         <Link className="sf-text-link" href="/account/warehouse/transfers">All transfers</Link>
         <p className="sf-kicker">Transfer</p>
         <h1>{transfer.name}</h1>
-        {query.created && <p className="sf-invoice-banner" role="status">Transfer requested.</p>}
-        {query.dispatched && <p className="sf-invoice-banner" role="status">Transfer dispatched.</p>}
+        {query.created && (
+          <p className="sf-invoice-banner" role="status">
+            Transfer created and sent to transit. Awaiting destination receive.
+          </p>
+        )}
         {query.received && <p className="sf-invoice-banner" role="status">Receive recorded.</p>}
         {query.cancelled && <p className="sf-invoice-banner" role="status">Transfer cancelled.</p>}
         <FormErrorBanner error={formError} />
@@ -84,6 +84,7 @@ export default async function WarehouseTransferDetailPage({
               <tr><th scope="row">To</th><td>{transfer.destWarehouse?.name || "—"}</td></tr>
               <tr><th scope="row">Status</th><td><span className="sf-badge">{pretty(transfer.state)}</span></td></tr>
               <tr><th scope="row">Requested by</th><td>{transfer.requestedBy?.name || "—"}</td></tr>
+              <tr><th scope="row">Dispatched by</th><td>{transfer.dispatchedBy?.name || "—"}</td></tr>
               <tr><th scope="row">Note</th><td>{transfer.note || "—"}</td></tr>
             </tbody>
           </table>
@@ -91,8 +92,8 @@ export default async function WarehouseTransferDetailPage({
 
         <section className="sf-delivery-section">
           <h2>Lines</h2>
-          {(canDispatch || canReceive) ? (
-            <OnceForm action={canDispatch ? dispatchWarehouseTransferAction : receiveWarehouseTransferAction}>
+          {canReceive ? (
+            <OnceForm action={receiveWarehouseTransferAction}>
               <input type="hidden" name="transferId" value={transfer.id} />
               <div className="sf-cart-table-wrap">
                 <table className="sf-cart-table">
@@ -102,17 +103,12 @@ export default async function WarehouseTransferDetailPage({
                       <th scope="col" className="is-num">Requested</th>
                       <th scope="col" className="is-num">Dispatched</th>
                       <th scope="col" className="is-num">Received</th>
-                      <th scope="col" className="is-num">
-                        {canDispatch ? "Dispatch qty" : "Receive qty"}
-                      </th>
+                      <th scope="col" className="is-num">Receive qty</th>
                     </tr>
                   </thead>
                   <tbody>
                     {transfer.lines.map((line) => {
                       const remaining = Math.max(line.qtyDispatched - line.qtyReceived, 0);
-                      const defaultQty = canDispatch
-                        ? line.qtyRequested
-                        : remaining;
                       return (
                         <tr key={line.id}>
                           <th scope="row">
@@ -129,9 +125,9 @@ export default async function WarehouseTransferDetailPage({
                               type="number"
                               min="0"
                               step="any"
-                              required={canReceive}
+                              required
                               aria-invalid={qtyInvalid || undefined}
-                              defaultValue={String(defaultQty)}
+                              defaultValue={String(remaining)}
                             />
                           </td>
                         </tr>
@@ -140,8 +136,8 @@ export default async function WarehouseTransferDetailPage({
                   </tbody>
                 </table>
               </div>
-              <OnceSubmit className="sf-btn" pendingLabel={canDispatch ? "Dispatching…" : "Receiving…"}>
-                <span>{canDispatch ? "Dispatch transfer" : "Receive transfer"}</span>
+              <OnceSubmit className="sf-btn" pendingLabel="Receiving…">
+                <span>Receive transfer</span>
               </OnceSubmit>
             </OnceForm>
           ) : (

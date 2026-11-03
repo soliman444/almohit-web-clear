@@ -9,7 +9,7 @@ import { getOdooCurrencyCatalog } from "../../../../../lib/currency/catalog";
 import { fieldClassName, parseBuyerFormError, type FormErrorQuery } from "../../../../../lib/form-errors";
 import {
   buyerPurchaseUomLabel,
-  listBuyerRawProducts,
+  listBuyerProducts,
   listBuyerSuppliers,
 } from "../../../../../lib/odoo/buyer";
 import { safeApiCall } from "../../../../../lib/odoo/safe";
@@ -29,7 +29,7 @@ export default async function NewBuyerPurchasePage({
   const loaded = await safeApiCall(async () => {
     const [suppliers, products, currencyCatalog] = await Promise.all([
       listBuyerSuppliers({ pageSize: 100, sort: "name_asc" }),
-      listBuyerRawProducts({ pageSize: 100, sort: "name_asc" }),
+      listBuyerProducts({ pageSize: 100, sort: "name_asc" }),
       getOdooCurrencyCatalog(),
     ]);
     const currencies = currencyCatalog.currencies
@@ -59,7 +59,7 @@ export default async function NewBuyerPurchasePage({
         <Link className="sf-text-link" href="/account/buyer/purchases">Back to purchases</Link>
         <p className="sf-kicker">Buyer</p>
         <h1>New purchase order.</h1>
-        <p className="sf-heading">Raw materials only — quantities use the purchase unit (e.g. baskets).</p>
+        <p className="sf-heading">Purchaseable products from Odoo (`purchase_ok`). Quantities use the purchase unit.</p>
         <FormErrorBanner error={formError} />
 
         {suppliers.length === 0 ? (
@@ -69,9 +69,9 @@ export default async function NewBuyerPurchasePage({
           </p>
         ) : products.length === 0 ? (
           <p>
-            No raw-material products found in category «المواد الخام - سلال».{" "}
+            No purchaseable products found.{" "}
             <Link className="sf-text-link" href="/account/buyer/products/new">Add product</Link>
-            {" "}and assign that category so finished cartons stay out of procurement.
+            {" "}with Purchase enabled in Odoo.
           </p>
         ) : currencies.length === 0 ? (
           <p className="error">No active currencies available from the catalog API.</p>

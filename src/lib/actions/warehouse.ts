@@ -9,7 +9,6 @@ import {
   cancelWarehouseTransfer,
   createWarehouseTransfer,
   dispatchWarehouseIssue,
-  dispatchWarehouseTransfer,
   importWarehouseInventory,
   receiveWarehouseReceipt,
   receiveWarehouseTransfer,
@@ -30,14 +29,20 @@ function mapWhError(error: unknown, fallbackPath: string): never {
       TRANSFER_NOT_FOUND: { code: "notfound", path: "/account/warehouse/transfers" },
       INVENTORY_NOT_FOUND: { code: "notfound", path: "/account/warehouse/inventory" },
       INVALID_RECEIPT_QUANTITY: { code: "qty", fields: ["quantityDone"] },
-      INVALID_FIELDS: { code: "invalid", fields: ["quantityDone", "lines"] },
+      INVALID_FIELDS: { code: "invalid", fields: ["quantityDone", "lines", "warehouseId"] },
       WAREHOUSE_PERMISSION_DENIED: { code: "permission" },
       WAREHOUSE_ASSIGNMENT_REQUIRED: { code: "warehouse", path: "/account/warehouse" },
-      WAREHOUSE_NOT_ALLOWED: { code: "warehouse", fields: ["warehouseId"] },
+      WAREHOUSE_NOT_ALLOWED: { code: "warehouse", fields: ["warehouseId", "sourceWarehouseId", "destWarehouseId"] },
       IMPORT_DUPLICATE: { code: "duplicate", fields: ["file"] },
       RECEIPT_NOT_READY: { code: "failed", fields: ["quantityDone"] },
       ISSUE_NOT_READY: { code: "failed", fields: ["quantityDone"] },
       TRANSFER_INVALID_STATE: { code: "failed" },
+      INSUFFICIENT_STOCK: { code: "stock", fields: ["lineQuantity", "lines"] },
+      TRANSFER_BUSY: { code: "busy" },
+      TRANSFER_DUPLICATE: { code: "duplicate" },
+      TRANSFER_DISPATCH_FAILED: { code: "failed" },
+      PAYMENT_REQUIRED: { code: "payment" },
+      DISTRIBUTOR_NOT_FOUND: { code: "invalid", fields: ["distributorUserId"] },
     },
   });
 }
@@ -45,12 +50,14 @@ function mapWhError(error: unknown, fallbackPath: string): never {
 function parseMoveQtyLines(formData: FormData) {
   const moveIds = formData.getAll("moveId").map((v) => String(v).trim());
   const qtys = formData.getAll("quantityDone").map((v) => String(v).trim());
-  const lines: Array<{ moveId: string; quantityDone: number }> = [];
+  const warehouseIds = formData.getAll("warehouseId").map((v) => String(v).trim());
+  const lines: Array<{ moveId: string; quantityDone: number; warehouseId: number }> = [];
   for (let i = 0; i < moveIds.length; i += 1) {
     const moveId = moveIds[i];
     const qty = Number(qtys[i]);
-    if (!moveId || !Number.isFinite(qty) || qty < 0) continue;
-    lines.push({ moveId, quantityDone: qty });
+    const warehouseId = parseOdooRecordId(warehouseIds[i] ?? "");
+    if (!moveId || !warehouseId || !Number.isFinite(qty) || qty < 0) continue;
+    lines.push({ moveId, quantityDone: qty, warehouseId });
   }
   return lines;
 }
@@ -77,7 +84,7 @@ export async function receiveWarehouseReceiptAction(formData: FormData) {
   if (!pickingId) redirectFormError(fallback, { code: "notfound" });
   const lines = parseMoveQtyLines(formData);
   if (!lines.length) {
-    redirectFormError(fallback, { code: "qty", fields: ["quantityDone"] });
+    redirectFormError(fallback, { code: "qty", fields: ["quantityDone", "warehouseId"] });
   }
   try {
     await receiveWarehouseReceipt(pickingId, lines);
@@ -99,10 +106,11 @@ export async function dispatchWarehouseIssueAction(formData: FormData) {
   if (!pickingId) redirectFormError(fallback, { code: "notfound" });
   const lines = parseMoveQtyLines(formData);
   if (!lines.length) {
-    redirectFormError(fallback, { code: "qty", fields: ["quantityDone"] });
+    redirectFormError(fallback, { code: "qty", fields: ["quantityDone", "warehouseId"] });
   }
+  const distributorUserId = parseOdooRecordId(value(formData, "distributorUserId")) || undefined;
   try {
-    await dispatchWarehouseIssue(pickingId, lines);
+    await dispatchWarehouseIssue(pickingId, lines, { distributorUserId });
   } catch (error) {
     mapWhError(error, fallback);
   }
@@ -117,6 +125,7 @@ export async function createWarehouseTransferAction(formData: FormData) {
   const sourceWarehouseId = parseOdooRecordId(value(formData, "sourceWarehouseId"));
   const destWarehouseId = parseOdooRecordId(value(formData, "destWarehouseId"));
   const note = value(formData, "note") || undefined;
+  const idempotencyKey = value(formData, "idempotencyKey") || undefined;
   const productIds = formData.getAll("productId").map((v) => String(v).trim());
   const quantities = formData.getAll("lineQuantity").map((v) => String(v).trim());
   const lines: Array<{ productId: number; quantity: number }> = [];
@@ -143,6 +152,7 @@ export async function createWarehouseTransferAction(formData: FormData) {
       sourceWarehouseId,
       destWarehouseId,
       note,
+      idempotencyKey,
       lines,
     });
     revalidatePath("/account/warehouse");
@@ -151,25 +161,6 @@ export async function createWarehouseTransferAction(formData: FormData) {
   } catch (error) {
     mapWhError(error, "/account/warehouse/transfers/new");
   }
-}
-
-export async function dispatchWarehouseTransferAction(formData: FormData) {
-  await requireWarehouseManager();
-  const transferId = parseOdooRecordId(value(formData, "transferId"));
-  const fallback = transferId
-    ? `/account/warehouse/transfers/${transferId}`
-    : "/account/warehouse/transfers";
-  if (!transferId) redirectFormError(fallback, { code: "notfound" });
-  const lines = parseTransferQtyLines(formData);
-  try {
-    await dispatchWarehouseTransfer(transferId, lines.length ? lines : undefined);
-  } catch (error) {
-    mapWhError(error, fallback);
-  }
-  revalidatePath("/account/warehouse");
-  revalidatePath("/account/warehouse/transfers");
-  revalidatePath(fallback);
-  redirect(`${fallback}?dispatched=1`);
 }
 
 export async function receiveWarehouseTransferAction(formData: FormData) {

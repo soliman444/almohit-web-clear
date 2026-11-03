@@ -275,10 +275,20 @@ export function buildOdooProductQuery(params: OdooProductListParams = {}): strin
   return search.toString();
 }
 
-const listOdooProductsByQuery = cache(async (
+function isInvalidCurrencyError(error: unknown): boolean {
+  return error instanceof ApiClientError && error.code === "INVALID_CURRENCY";
+}
+
+function stripCurrencyQuery(queryString: string): string {
+  const search = new URLSearchParams(queryString);
+  search.delete("currency");
+  return search.toString();
+}
+
+async function requestOdooProductList(
   queryString: string,
   cookies?: OdooCookieAdapter,
-): Promise<StorefrontProductList> => {
+): Promise<StorefrontProductList> {
   const path = queryString ? `/products?${queryString}` : "/products";
   const payload = await odooRequest<OdooCatalogProductList>(path, {
     method: "GET",
@@ -290,6 +300,21 @@ const listOdooProductsByQuery = cache(async (
     items,
     pagination: mapOdooProductPagination(payload?.pagination, items.length),
   };
+}
+
+const listOdooProductsByQuery = cache(async (
+  queryString: string,
+  cookies?: OdooCookieAdapter,
+): Promise<StorefrontProductList> => {
+  try {
+    return await requestOdooProductList(queryString, cookies);
+  } catch (error) {
+    // Merchant cookie may request USD/etc. without an authorized currency pricelist.
+    if (isInvalidCurrencyError(error) && queryString.includes("currency=")) {
+      return requestOdooProductList(stripCurrencyQuery(queryString), cookies);
+    }
+    throw error;
+  }
 });
 
 export async function listOdooProducts(
@@ -315,6 +340,9 @@ const getOdooProductByKey = cache(async (
   } catch (error) {
     if (error instanceof ApiClientError && (error.status === 404 || error.code === "PRODUCT_NOT_FOUND")) {
       return null;
+    }
+    if (isInvalidCurrencyError(error) && currency) {
+      return getOdooProductByKey(id, "", cookies);
     }
     throw error;
   }

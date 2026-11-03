@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { BRAND } from "../lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Almohit — Wholesale Commerce Platform",
-  description: "A wholesale catalog shown like a campaign. Prices appear only after business approval.",
+  title: `${BRAND.name} — Wholesale Fresh Fruits`,
+  description:
+    "MANGO FRESH FRUITS wholesale catalog. Browse produce first; trade prices after business approval.",
+  icons: {
+    icon: BRAND.logoSrc,
+    apple: BRAND.logoSrc,
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

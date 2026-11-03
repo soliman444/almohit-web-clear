@@ -1,4 +1,5 @@
 import { setDefaultResultOrder } from "node:dns";
+import { setDefaultAutoSelectFamily } from "node:net";
 import { ApiClientError, ApiUnavailableError } from "./errors";
 import { getOdooApiPrefix, getOdooApiUrl, ODOO_SESSION_COOKIE_NAME } from "./config";
 import {
@@ -9,9 +10,11 @@ import {
 import type { OdooApiResponse, OdooCookieAdapter } from "./types";
 
 try {
+  // Windows + Cloudflare often fails Happy Eyeballs (IPv4+IPv6 fan-out → ETIMEDOUT AggregateError).
   setDefaultResultOrder("ipv4first");
+  setDefaultAutoSelectFamily(false);
 } catch {
-  // Node may already lock the resolver order.
+  // Node may already lock resolver / family defaults.
 }
 
 export type OdooRequestOptions = {
@@ -64,7 +67,7 @@ export async function odooRequest<T>(path: string, options: OdooRequestOptions =
       lastError = error;
       const retry = attempt < attempts - 1 && isRetryableNetworkError(error);
       if (!retry) {
-        console.error("Odoo API unavailable:", error);
+        logOdooNetworkFailure(url, error);
         throw new ApiUnavailableError(error);
       }
       await wait(GET_RETRY_DELAYS_MS[attempt] ?? 700);
@@ -72,7 +75,7 @@ export async function odooRequest<T>(path: string, options: OdooRequestOptions =
   }
 
   if (!response) {
-    console.error("Odoo API unavailable:", lastError);
+    logOdooNetworkFailure(url, lastError);
     throw new ApiUnavailableError(lastError);
   }
 
@@ -125,21 +128,34 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function logOdooNetworkFailure(url: string, error: unknown) {
+  const codes = collectErrorCodes(error);
+  const code = codes[0] || (error instanceof Error ? error.name : "UNKNOWN");
+  console.error(`Odoo API unavailable (${code}): ${url}`);
+}
+
 function isRetryableNetworkError(error: unknown): boolean {
+  // Timeouts already waited FETCH_TIMEOUT_MS — retrying doubles PDP latency (e.g. 12s → 14s+).
   if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-    return true;
+    return false;
   }
   const codes = collectErrorCodes(error);
+  if (
+    codes.some((code) => (
+      code === "ETIMEDOUT"
+      || code === "ABORT_ERR"
+      || code === "UND_ERR_CONNECT_TIMEOUT"
+      || code === "UND_ERR_ABORTED"
+    ))
+  ) {
+    return false;
+  }
   return codes.some((code) => (
-    code === "ETIMEDOUT"
-    || code === "ECONNRESET"
+    code === "ECONNRESET"
     || code === "ECONNREFUSED"
     || code === "ENOTFOUND"
     || code === "EAI_AGAIN"
-    || code === "ABORT_ERR"
-    || code === "UND_ERR_CONNECT_TIMEOUT"
     || code === "UND_ERR_SOCKET"
-    || code === "UND_ERR_ABORTED"
   ));
 }
 

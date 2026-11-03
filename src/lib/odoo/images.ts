@@ -4,6 +4,17 @@ const IMAGE_PREFIX = "/web/image/";
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
 
+/** Prefer sharper Odoo image fields for Retina cards/PDP without changing the backend contract. */
+function upgradeOdooImagePath(pathname: string): string {
+  return pathname
+    .replace(/\/image_128(?=\/|$)/g, "/image_512")
+    .replace(/\/image_256(?=\/|$)/g, "/image_1024")
+    .replace(/\/image_512(?=\/|$)/g, "/image_1024")
+    .replace(/\/image_variant_128(?=\/|$)/g, "/image_variant_512")
+    .replace(/\/image_variant_256(?=\/|$)/g, "/image_variant_1024")
+    .replace(/\/image_variant_512(?=\/|$)/g, "/image_variant_1024");
+}
+
 export function rewriteOdooImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
 
@@ -13,7 +24,8 @@ export function rewriteOdooImageUrl(url: string | null | undefined): string | nu
       : new URL(url, "http://odoo.invalid");
     if (!parsed.pathname.startsWith(IMAGE_PREFIX)) return null;
     if (parsed.pathname.includes("..")) return null;
-    return `/odoo-media${parsed.pathname}${parsed.search}`;
+    const pathname = upgradeOdooImagePath(parsed.pathname);
+    return `/odoo-media${pathname}${parsed.search}`;
   } catch {
     return null;
   }

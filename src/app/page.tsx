@@ -1,32 +1,80 @@
 import Link from "next/link";
 
+import { CatalogPager } from "../components/storefront/catalog-pager";
 import { CinematicHero } from "../components/storefront/cinematic-hero";
 import { CategoryMosaic } from "../components/storefront/category-mosaic";
 import { FeaturedCollections } from "../components/storefront/featured-collections";
 import { OffersSection } from "../components/storefront/promo-system";
+import { ProductFinder } from "../components/storefront/product-finder";
+import { ProductGrid } from "../components/storefront/product-grid";
 import { ProductRail } from "../components/storefront/product-rail";
+import { ScrollToId } from "../components/storefront/scroll-to-id";
 import { StorefrontShell } from "../components/storefront/shell";
 import { WholesaleCta } from "../components/storefront/wholesale-cta";
 import { StorefrontUnavailable } from "../components/system/storefront-unavailable";
 
 import { fetchStorefrontCategoryCards } from "../lib/catalog/categories";
-import { fetchStorefrontProducts } from "../lib/catalog/products";
+import {
+  parseCatalogMaxMoq,
+  parseCatalogMinMoq,
+  parseCatalogPage,
+  parseCatalogSort,
+  storefrontCatalogHref,
+  type FinderQuery,
+} from "../lib/catalog/filters";
 import { homeCatalogSlices } from "../lib/catalog/home";
+import { fetchStorefrontProducts } from "../lib/catalog/products";
+import { listOdooBrands } from "../lib/odoo/catalog";
 import { safeApiCall } from "../lib/odoo/safe";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<FinderQuery>;
+}) {
+  const query = await searchParams;
+  const term = query.q?.trim();
+  const page = parseCatalogPage(query.page);
+  const sort = parseCatalogSort(query.sort);
+  const catalogActive = Boolean(
+    term
+    || query.category
+    || query.brand
+    || query.min_moq
+    || query.max_moq
+    || query.availability
+    || (query.sort && query.sort !== "newest")
+    || page > 1,
+  );
+
   const catalog = await safeApiCall(async () => {
-    const [listed, categories] = await Promise.all([
-      fetchStorefrontProducts(),
+    // One product list on the default home path; a second list only when filters change the query.
+    const catalogPromise = fetchStorefrontProducts({
+      q: term,
+      category: query.category,
+      brand: query.brand,
+      inStock: query.availability === "in-stock" ? true : undefined,
+      minMoq: parseCatalogMinMoq(query.min_moq),
+      maxMoq: parseCatalogMaxMoq(query.max_moq),
+      sort,
+      page,
+    });
+    const [catalogListed, categories, brands] = await Promise.all([
+      catalogPromise,
       fetchStorefrontCategoryCards(),
+      listOdooBrands(),
     ]);
+    const homeListed = catalogActive
+      ? await fetchStorefrontProducts({ pageSize: 24, sort: "newest" })
+      : catalogListed;
 
     return {
-      products: listed.items,
-      productTotal: listed.pagination.total,
+      homeListed,
+      catalogListed,
       categories,
+      brands,
     };
   });
 
@@ -35,11 +83,15 @@ export default async function HomePage() {
   }
 
   const {
-    products,
-    productTotal,
+    homeListed,
+    catalogListed,
     categories,
+    brands,
   } = catalog.data;
 
+  const products = homeListed.items;
+  const productTotal = homeListed.pagination.total;
+  const listed = catalogListed;
   const home = homeCatalogSlices(products, categories);
 
   const homeHero =
@@ -49,8 +101,20 @@ export default async function HomePage() {
         category.slug === "fresh-produce",
     ) ?? home.roots[0];
 
+  const resultLabel = term
+    ? `Results for “${term}”`
+    : sort === "name_asc"
+      ? "A–Z catalog"
+      : sort === "name_desc"
+        ? "Z–A catalog"
+        : sort === "oldest"
+          ? "Oldest first"
+          : "Newest arrivals";
+
   return (
     <StorefrontShell transparentHeader>
+      <ScrollToId id="catalog" enabled={catalogActive} />
+
       <CinematicHero
         collections={home.collections}
         focalX={homeHero?.heroFocalX}
@@ -88,9 +152,9 @@ export default async function HomePage() {
 
           <Link
             className="sf-pill"
-            href="/products"
+            href="/#catalog"
           >
-            View all
+            Browse all
           </Link>
         </div>
 
@@ -106,16 +170,94 @@ export default async function HomePage() {
         />
       ) : null}
 
-      <ProductRail
-        products={
-          home.bestSellers.length
-            ? home.bestSellers.slice(0, 6)
-            : products.slice(0, 6)
-        }
-        index="03"
-        eyebrow="Selected"
-        title="Ready to supply."
-      />
+      <section
+        className="sf-section sf-home-catalog"
+        id="catalog"
+      >
+        <div className="sf-home-section-head">
+          <div>
+            <p className="sf-kicker">Products</p>
+            <h2 className="sf-section-title">{resultLabel}</h2>
+          </div>
+          <p className="sf-heading-meta">
+            {listed.pagination.total} item{listed.pagination.total === 1 ? "" : "s"}
+            {listed.pagination.pages > 1
+              ? ` · page ${listed.pagination.page} of ${listed.pagination.pages}`
+              : ""}
+          </p>
+        </div>
+
+        <div className="sf-home-catalog-tools">
+          <ProductFinder
+            categories={categories}
+            brands={brands}
+            query={query}
+            compact
+            action="/"
+            hash="#catalog"
+          />
+
+          <div className="sf-home-sort-chips" aria-label="Quick sort">
+            <Link
+              className={sort === "newest" ? "is-active" : undefined}
+              href={storefrontCatalogHref("/", query, { sort: "newest", page: undefined }) + "#catalog"}
+            >
+              Newest
+            </Link>
+            <Link
+              className={sort === "oldest" ? "is-active" : undefined}
+              href={storefrontCatalogHref("/", query, { sort: "oldest", page: undefined }) + "#catalog"}
+            >
+              Oldest
+            </Link>
+            <Link
+              className={sort === "name_asc" ? "is-active" : undefined}
+              href={storefrontCatalogHref("/", query, { sort: "name_asc", page: undefined }) + "#catalog"}
+            >
+              Name A–Z
+            </Link>
+            <Link
+              className={sort === "name_desc" ? "is-active" : undefined}
+              href={storefrontCatalogHref("/", query, { sort: "name_desc", page: undefined }) + "#catalog"}
+            >
+              Name Z–A
+            </Link>
+            {catalogActive ? (
+              <Link
+                className="sf-text-link"
+                href="/#catalog"
+              >
+                Clear
+              </Link>
+            ) : null}
+          </div>
+        </div>
+
+        <ProductGrid
+          products={listed.items}
+          variant="catalog"
+        />
+
+        <CatalogPager
+          pagination={listed.pagination}
+          hrefForPage={(nextPage) =>
+            `${storefrontCatalogHref("/", query, { page: String(nextPage) })}#catalog`
+          }
+        />
+      </section>
+
+      {!catalogActive ? (
+        <ProductRail
+          products={
+            home.bestSellers.length
+              ? home.bestSellers.slice(0, 6)
+              : products.slice(0, 6)
+          }
+          index="03"
+          eyebrow="Selected"
+          title="Ready to supply."
+        />
+      ) : null}
 
       <OffersSection
         promos={home.promos.slice(0, 3)}

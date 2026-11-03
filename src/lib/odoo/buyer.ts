@@ -11,9 +11,6 @@ export type BuyerCategoryRel = BuyerNamedRel & {
   completeName: string | null;
 };
 
-/** Matches Odoo `_is_raw_material_product` (buyer.py). */
-export const BUYER_RAW_CATEGORY_COMPLETE_NAME = "المواد الخام - سلال";
-
 export type BuyerSupplier = {
   id: string;
   name: string;
@@ -309,12 +306,6 @@ function mapCategory(rel: OdooBuyerCategory | null | undefined): BuyerCategoryRe
     name: rel.name,
     completeName: rel.complete_name ?? null,
   };
-}
-
-export function isBuyerRawMaterialProduct(product: BuyerProduct) {
-  const complete = product.category?.completeName?.trim();
-  if (complete === BUYER_RAW_CATEGORY_COMPLETE_NAME) return true;
-  return product.category?.name?.trim() === BUYER_RAW_CATEGORY_COMPLETE_NAME;
 }
 
 export function buyerPurchaseUomLabel(product: BuyerProduct) {
@@ -616,43 +607,6 @@ export async function listBuyerProducts(
   return { items, pagination: mapPagination(payload, items.length) };
 }
 
-/** Prefer server `category_id` filter; fall back to client raw-material match. */
-export async function listBuyerRawProducts(
-  params: { q?: string; page?: number; pageSize?: number; sort?: string } = {},
-  cookies?: OdooCookieAdapter,
-): Promise<BuyerListResult<BuyerProduct>> {
-  const pageSize = params.pageSize ?? 100;
-  const probe = await listBuyerProducts(
-    { ...params, page: 1, pageSize, sort: params.sort ?? "name_asc" },
-    cookies,
-  );
-  const rawCategoryId = probe.items.find((product) => isBuyerRawMaterialProduct(product))?.category?.id;
-  if (rawCategoryId) {
-    const filtered = await listBuyerProducts(
-      {
-        ...params,
-        page: params.page ?? 1,
-        pageSize,
-        sort: params.sort ?? "name_asc",
-        categoryId: Number(rawCategoryId),
-      },
-      cookies,
-    );
-    return {
-      ...filtered,
-      items: filtered.items.filter(isBuyerRawMaterialProduct),
-    };
-  }
-  return {
-    ...probe,
-    items: probe.items.filter(isBuyerRawMaterialProduct),
-    pagination: {
-      ...probe.pagination,
-      total: probe.items.filter(isBuyerRawMaterialProduct).length,
-    },
-  };
-}
-
 export async function getBuyerProduct(productId: number, cookies?: OdooCookieAdapter) {
   const payload = await odooRequest<OdooBuyerProduct>(`/buyer/products/${productId}`, {
     method: "GET",
@@ -757,25 +711,6 @@ export async function getBuyerReceipt(pickingId: number, cookies?: OdooCookieAda
     method: "GET",
     cookies,
     captureSetCookie: false,
-  });
-  return mapBuyerReceipt(payload);
-}
-
-export async function receiveBuyerReceipt(
-  pickingId: number,
-  lines: Array<{ moveId: number; quantityDone: number }>,
-  cookies?: OdooCookieAdapter,
-) {
-  const payload = await odooRequest<OdooBuyerReceipt>(`/buyer/receipts/${pickingId}/receive`, {
-    method: "POST",
-    cookies,
-    captureSetCookie: false,
-    body: {
-      lines: lines.map((line) => ({
-        move_id: line.moveId,
-        quantity_done: line.quantityDone,
-      })),
-    },
   });
   return mapBuyerReceipt(payload);
 }

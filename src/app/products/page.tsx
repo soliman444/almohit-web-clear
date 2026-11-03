@@ -73,7 +73,7 @@ export default async function ProductsPage({
           <ImageShot src={EDITORIAL.night} alt="" sizes="100vw" priority preset="campaign" className="sf-fill" />
           <div className="sf-page-top">
             <h1 className="sf-page-title">
-              {term ? "Results" : query.sort === "newest" ? "Just in" : "Catalog"}
+              {term ? "Results" : sort === "oldest" ? "Oldest" : sort === "name_asc" ? "A–Z" : sort === "name_desc" ? "Z–A" : "Just in"}
             </h1>
             <p className="sf-count">{String(pagination.total).padStart(2, "0")} items</p>
           </div>
@@ -81,10 +81,10 @@ export default async function ProductsPage({
         <div className="sf-page-body">
           {term && <p className="sf-heading-meta"><span>Search</span><span>{term}</span></p>}
           <nav className="sf-controls" aria-label="Browse collections">
-            <Link className={!query.view && !query.category ? "is-active" : ""} href="/products">All</Link>
+            <Link className={!query.view && !query.category && sort === "newest" ? "is-active" : ""} href="/products">All</Link>
             <Link
-              className={query.sort === "newest" ? "is-active" : ""}
-              href="/products?sort=newest"
+              className={sort === "newest" && !query.category ? "is-active" : ""}
+              href="/products"
             >
               New
             </Link>

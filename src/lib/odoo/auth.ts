@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { AuthMeResponse, CustomerProfile } from "@/types/contracts";
 import { ApiClientError } from "./errors";
 import { odooRequest } from "./client";
@@ -60,7 +61,7 @@ export async function loginCustomer(
   return mapCurrentCustomer(payload);
 }
 
-export async function getSessionUser(cookies?: OdooCookieAdapter): Promise<CurrentCustomer | null> {
+async function loadSessionUser(cookies?: OdooCookieAdapter): Promise<CurrentCustomer | null> {
   const adapter = cookies ?? await nextOdooCookies();
   if (!readOdooSessionCookie(adapter)) return null;
 
@@ -75,6 +76,14 @@ export async function getSessionUser(cookies?: OdooCookieAdapter): Promise<Curre
     if (isUnauthenticated(error)) return null;
     throw error;
   }
+}
+
+/** One /auth/me per RSC request when callers omit a custom cookie adapter. */
+const getSessionUserCached = cache(async (): Promise<CurrentCustomer | null> => loadSessionUser());
+
+export async function getSessionUser(cookies?: OdooCookieAdapter): Promise<CurrentCustomer | null> {
+  if (cookies) return loadSessionUser(cookies);
+  return getSessionUserCached();
 }
 
 export async function getCurrentCustomer(cookies?: OdooCookieAdapter): Promise<CurrentCustomer | null> {

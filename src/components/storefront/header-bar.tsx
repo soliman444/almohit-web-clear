@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { duration, easeOut, stagger } from "../../lib/motion";
 import type { CartView } from "../../lib/commerce/cart-view";
 import type { DisplayCurrencyCode, DisplayCurrencyConfig } from "../../config/currencies";
+import { BrandLogo } from "./brand-logo";
 import { CartDrawer } from "./cart-drawer";
 import { useCartSession } from "./cart-session";
 import { CurrencySelector } from "./currency-selector";
@@ -81,7 +82,7 @@ export function HeaderBar({
           <button className="sf-nav-toggle" type="button" onClick={() => setMenu(true)} aria-expanded={menu}>
             Menu
           </button>
-          <Link className="sf-logo" href="/">Almohit</Link>
+          <BrandLogo priority />
           <nav className="sf-nav-desktop" aria-label="Main navigation">
             {links.map((link) => (
               <Link className="sf-nav-link" key={link.href} href={link.href}>{link.label}</Link>
@@ -151,7 +152,7 @@ export function HeaderBar({
             transition={{ duration: duration.base, ease: easeOut }}
           >
             <div className="sf-menu-bar">
-              <Link className="sf-logo" href="/" onClick={() => setMenu(false)}>Almohit</Link>
+              <BrandLogo variant="menu" onClick={() => setMenu(false)} />
               <button type="button" onClick={() => setMenu(false)}>Close</button>
             </div>
             <nav className="sf-menu-list">

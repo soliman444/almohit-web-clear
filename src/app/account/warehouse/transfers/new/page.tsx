@@ -23,7 +23,8 @@ export default async function NewWarehouseTransferPage({
   const formError = parseWarehouseFormError(query);
   const linesInvalid = Boolean(
     formError?.fields.some((f) => ["lines", "productId", "lineQuantity"].includes(f))
-    || formError?.code === "lines",
+    || formError?.code === "lines"
+    || formError?.code === "stock",
   );
   const loaded = await safeWarehouseCall(() => getMyWarehouses());
   if (!loaded.ok) {
@@ -33,19 +34,22 @@ export default async function NewWarehouseTransferPage({
     return <StorefrontUnavailable />;
   }
   const access = loaded.data;
+  const idempotencyKey = crypto.randomUUID();
 
   return (
     <StorefrontShell>
       <main className="sf-account sf-invoice-page sf-wh-page">
         <Link className="sf-text-link" href="/account/warehouse/transfers">All transfers</Link>
         <p className="sf-kicker">Transfer</p>
-        <h1>Request transfer.</h1>
+        <h1>Create transfer.</h1>
         <p className="muted">
-          Source must be one of your warehouses. Destination can be any company warehouse.
+          Creates the transfer and sends stock to transit in one step. Destination receive happens later.
+          Source and destination must both be assigned to you.
         </p>
         <FormErrorBanner error={formError} />
 
         <OnceForm action={createWarehouseTransferAction} className="sf-wh-form">
+          <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
           <div className="sf-biz-grid">
             <label className={fieldClassName("sf-biz-field", formError?.fields, "sourceWarehouseId")}>
               Source warehouse
@@ -62,16 +66,18 @@ export default async function NewWarehouseTransferPage({
               </select>
             </label>
             <label className={fieldClassName("sf-biz-field", formError?.fields, "destWarehouseId")}>
-              Destination warehouse ID
-              <input
+              Destination warehouse
+              <select
                 name="destWarehouseId"
-                type="number"
-                min="1"
-                step="1"
                 required
-                placeholder="Numeric warehouse id"
+                defaultValue=""
                 aria-invalid={formError?.fields.includes("destWarehouseId") || undefined}
-              />
+              >
+                <option value="" disabled>Select destination</option>
+                {access.warehouses.map((wh) => (
+                  <option key={wh.id} value={wh.id}>{wh.name}</option>
+                ))}
+              </select>
             </label>
             <label className="sf-biz-field is-span-2">
               Note
@@ -82,8 +88,8 @@ export default async function NewWarehouseTransferPage({
           <h2>Lines</h2>
           <WarehouseTransferLines invalid={linesInvalid} />
 
-          <OnceSubmit className="sf-btn" pendingLabel="Creating…">
-            <span>Create transfer</span>
+          <OnceSubmit className="sf-btn" pendingLabel="Creating & dispatching…">
+            <span>Create &amp; dispatch</span>
           </OnceSubmit>
         </OnceForm>
       </main>
