@@ -75,8 +75,7 @@ export function ProductFinder({
       </label>
       <label className="field">
         Availability
-        <select name="availability" defaultValue={query.availability ?? ""}>
-          <option value="">All</option>
+        <select name="availability" defaultValue="in-stock" disabled>
           <option value="in-stock">Ready to supply</option>
         </select>
       </label>

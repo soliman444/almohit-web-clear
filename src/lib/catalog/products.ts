@@ -16,11 +16,15 @@ async function withCurrencyFallback<T>(
   try {
     return await run(currency);
   } catch (error) {
-    if (!(error instanceof ApiClientError) || error.code !== "INVALID_CURRENCY" || !currency) {
+    if (!(error instanceof ApiClientError) || error.code !== "INVALID_CURRENCY") {
       throw error;
     }
-    // Selected display currency is in the FX catalog but not authorized for this merchant.
+    // Drop a bad display-currency cookie; catalog.ts also falls back to public catalog
+    // when the merchant session has no pricelist.
     await resetDisplayCurrencyToCompany().catch(() => undefined);
+    if (!currency) {
+      throw error;
+    }
     return run(undefined);
   }
 }
@@ -40,7 +44,8 @@ export async function fetchStorefrontProducts(
       categoryId: query.categoryId ?? parseOdooRecordId(query.category) ?? undefined,
       includeChildren: query.includeChildren,
       brandId: query.brandId ?? parseOdooRecordId(query.brand) ?? undefined,
-      inStock: query.inStock,
+      // Storefront catalog lists only sellable stock (Odoo filters before pagination).
+      inStock: true,
       minMoq: query.minMoq,
       maxMoq: query.maxMoq,
       sort: query.sort,
@@ -79,6 +84,7 @@ export async function fetchRelatedForProduct(
       categoryId,
       pageSize: options.pageSize ?? Math.max(limit + 1, 8),
       sort: "newest",
+      inStock: true,
       currency: code,
     }),
   );

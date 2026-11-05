@@ -55,7 +55,6 @@ export default async function HomePage({
       q: term,
       category: query.category,
       brand: query.brand,
-      inStock: query.availability === "in-stock" ? true : undefined,
       minMoq: parseCatalogMinMoq(query.min_moq),
       maxMoq: parseCatalogMaxMoq(query.max_moq),
       sort,

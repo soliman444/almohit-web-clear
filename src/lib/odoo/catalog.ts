@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { MoneyAmount } from "@/types/contracts";
 import { ApiClientError } from "./errors";
 import { odooRequest } from "./client";
+import { memoryCookieAdapter } from "./cookies";
 import { rewriteOdooImageUrl } from "./images";
 import type { OdooCookieAdapter } from "./types";
 
@@ -86,20 +87,38 @@ export type OdooProductSort =
   | "newest"
   | "oldest";
 
+export type OdooCategorySort = OdooProductSort;
+
+const ODOO_CATEGORY_SORTS = new Set<OdooCategorySort>([
+  "name_asc",
+  "name_desc",
+  "newest",
+  "oldest",
+]);
+
 export type OdooProductListParams = {
-    page?: number;
-    pageSize?: number;
-    q?: string;
-    categoryId?: number;
-    includeChildren?: boolean;
-    brandId?: number;
-    inStock?: boolean;
-    minMoq?: number;
-    maxMoq?: number;
-    sort?: OdooProductSort;
-    /** ISO currency code for display prices (e.g. USD). */
-    currency?: string;
-  };
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  categoryId?: number;
+  includeChildren?: boolean;
+  brandId?: number;
+  inStock?: boolean;
+  minMoq?: number;
+  maxMoq?: number;
+  sort?: OdooProductSort;
+  /** ISO currency code for display prices (e.g. USD). */
+  currency?: string;
+};
+
+export type OdooCategoryListParams = {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  parentId?: number;
+  inStock?: boolean;
+  sort?: OdooCategorySort;
+};
 
 export type StorefrontProductPagination = {
   page: number;
@@ -112,6 +131,11 @@ export type StorefrontProductPagination = {
 
 export type StorefrontProductList = {
   items: StorefrontProduct[];
+  pagination: StorefrontProductPagination;
+};
+
+export type StorefrontCategoryList = {
+  items: StorefrontCategoryCard[];
   pagination: StorefrontProductPagination;
 };
 
@@ -166,6 +190,7 @@ export type OdooCatalogCategory = {
   name: string;
   complete_name?: string;
   parent_id?: number | null;
+  image_url?: string | null;
 };
 
 export type OdooCatalogBrand = {
@@ -184,6 +209,11 @@ type OdooCatalogPagination = {
 
 type OdooCatalogProductList = {
   items?: OdooCatalogProduct[];
+  pagination?: OdooCatalogPagination;
+};
+
+type OdooCatalogCategoryList = {
+  items?: OdooCatalogCategory[];
   pagination?: OdooCatalogPagination;
 };
 
@@ -275,6 +305,44 @@ export function buildOdooProductQuery(params: OdooProductListParams = {}): strin
   return search.toString();
 }
 
+function hasOdooCategoryEnhancedParams(params: OdooCategoryListParams = {}): boolean {
+  return Boolean(
+    asPositiveInt(params.page)
+    || asPositiveInt(params.pageSize)
+    || params.q?.trim()
+    || asPositiveInt(params.parentId)
+    || typeof params.inStock === "boolean"
+    || (params.sort != null && ODOO_CATEGORY_SORTS.has(params.sort)),
+  );
+}
+
+/** Empty string keeps Odoo's legacy flat-array categories contract. */
+export function buildOdooCategoryQuery(params: OdooCategoryListParams = {}): string {
+  if (!hasOdooCategoryEnhancedParams(params)) {
+    return "";
+  }
+
+  const search = new URLSearchParams();
+  search.set("page", String(asPositiveInt(params.page) ?? 1));
+  search.set("page_size", String(Math.min(asPositiveInt(params.pageSize) ?? 20, 100)));
+
+  const q = params.q?.trim();
+  if (q) search.set("q", q);
+
+  const parentId = asPositiveInt(params.parentId);
+  if (parentId) search.set("parent_id", String(parentId));
+
+  if (typeof params.inStock === "boolean") {
+    search.set("in_stock", params.inStock ? "true" : "false");
+  }
+
+  if (params.sort && ODOO_CATEGORY_SORTS.has(params.sort)) {
+    search.set("sort", params.sort);
+  }
+
+  return search.toString();
+}
+
 function isInvalidCurrencyError(error: unknown): boolean {
   return error instanceof ApiClientError && error.code === "INVALID_CURRENCY";
 }
@@ -302,19 +370,38 @@ async function requestOdooProductList(
   };
 }
 
+/**
+ * Recover from INVALID_CURRENCY for storefront catalog:
+ * 1) drop ?currency=
+ * 2) if merchant session still has no pricelist → anonymous (public) catalog
+ */
+async function requestOdooProductListWithCurrencyFallback(
+  queryString: string,
+  cookies?: OdooCookieAdapter,
+): Promise<StorefrontProductList> {
+  try {
+    return await requestOdooProductList(queryString, cookies);
+  } catch (error) {
+    if (!isInvalidCurrencyError(error)) throw error;
+  }
+
+  const stripped = stripCurrencyQuery(queryString);
+  if (stripped !== queryString) {
+    try {
+      return await requestOdooProductList(stripped, cookies);
+    } catch (error) {
+      if (!isInvalidCurrencyError(error)) throw error;
+    }
+  }
+
+  return requestOdooProductList(stripped, memoryCookieAdapter());
+}
+
 const listOdooProductsByQuery = cache(async (
   queryString: string,
   cookies?: OdooCookieAdapter,
 ): Promise<StorefrontProductList> => {
-  try {
-    return await requestOdooProductList(queryString, cookies);
-  } catch (error) {
-    // Merchant cookie may request USD/etc. without an authorized currency pricelist.
-    if (isInvalidCurrencyError(error) && queryString.includes("currency=")) {
-      return requestOdooProductList(stripCurrencyQuery(queryString), cookies);
-    }
-    throw error;
-  }
+  return requestOdooProductListWithCurrencyFallback(queryString, cookies);
 });
 
 export async function listOdooProducts(
@@ -324,13 +411,13 @@ export async function listOdooProducts(
   return listOdooProductsByQuery(buildOdooProductQuery(params), cookies);
 }
 
-const getOdooProductByKey = cache(async (
+async function requestOdooProductDetail(
   id: number,
   currency: string,
   cookies?: OdooCookieAdapter,
-): Promise<StorefrontProduct | null> => {
+): Promise<StorefrontProduct | null> {
+  const qs = currency ? `?currency=${encodeURIComponent(currency)}` : "";
   try {
-    const qs = currency ? `?currency=${encodeURIComponent(currency)}` : "";
     const payload = await odooRequest<OdooCatalogProduct>(`/products/${id}${qs}`, {
       method: "GET",
       cookies,
@@ -341,11 +428,38 @@ const getOdooProductByKey = cache(async (
     if (error instanceof ApiClientError && (error.status === 404 || error.code === "PRODUCT_NOT_FOUND")) {
       return null;
     }
-    if (isInvalidCurrencyError(error) && currency) {
-      return getOdooProductByKey(id, "", cookies);
-    }
     throw error;
   }
+}
+
+async function requestOdooProductDetailWithCurrencyFallback(
+  id: number,
+  currency: string,
+  cookies?: OdooCookieAdapter,
+): Promise<StorefrontProduct | null> {
+  try {
+    return await requestOdooProductDetail(id, currency, cookies);
+  } catch (error) {
+    if (!isInvalidCurrencyError(error)) throw error;
+  }
+
+  if (currency) {
+    try {
+      return await requestOdooProductDetail(id, "", cookies);
+    } catch (error) {
+      if (!isInvalidCurrencyError(error)) throw error;
+    }
+  }
+
+  return requestOdooProductDetail(id, "", memoryCookieAdapter());
+}
+
+const getOdooProductByKey = cache(async (
+  id: number,
+  currency: string,
+  cookies?: OdooCookieAdapter,
+): Promise<StorefrontProduct | null> => {
+  return requestOdooProductDetailWithCurrencyFallback(id, currency, cookies);
 });
 
 export async function getOdooProduct(
@@ -356,14 +470,74 @@ export async function getOdooProduct(
   return getOdooProductByKey(id, currency?.trim().toUpperCase() || "", cookies);
 }
 
-export const listOdooCategories = cache(async (cookies?: OdooCookieAdapter): Promise<StorefrontCategoryCard[]> => {
-  const payload = await odooRequest<OdooCatalogCategory[]>("/categories", {
+function mapOdooCategoryList(
+  payload: OdooCatalogCategory[] | OdooCatalogCategoryList | null | undefined,
+): StorefrontCategoryList {
+  if (Array.isArray(payload)) {
+    const items = payload.map(mapOdooCategory);
+    return {
+      items,
+      pagination: {
+        page: 1,
+        pageSize: Math.max(items.length, 1),
+        total: items.length,
+        pages: items.length > 0 ? 1 : 0,
+        hasNext: false,
+        hasPrevious: false,
+      },
+    };
+  }
+
+  const items = (payload?.items ?? []).map(mapOdooCategory);
+  return {
+    items,
+    pagination: mapOdooProductPagination(payload?.pagination, items.length),
+  };
+}
+
+const listOdooCategoriesByQuery = cache(async (
+  queryString: string,
+  cookies?: OdooCookieAdapter,
+): Promise<StorefrontCategoryList> => {
+  const path = queryString ? `/categories?${queryString}` : "/categories";
+  const payload = await odooRequest<OdooCatalogCategory[] | OdooCatalogCategoryList>(path, {
     method: "GET",
     cookies,
     captureSetCookie: false,
   });
-  return (payload ?? []).map(mapOdooCategory);
+  return mapOdooCategoryList(payload);
 });
+
+export async function listOdooCategories(
+  params: OdooCategoryListParams = {},
+  cookies?: OdooCookieAdapter,
+): Promise<StorefrontCategoryList> {
+  return listOdooCategoriesByQuery(buildOdooCategoryQuery(params), cookies);
+}
+
+/** Full match set: legacy call when unfiltered, else page through enhanced results. */
+export async function listAllOdooCategories(
+  params: Omit<OdooCategoryListParams, "page" | "pageSize"> = {},
+  cookies?: OdooCookieAdapter,
+): Promise<StorefrontCategoryCard[]> {
+  if (!hasOdooCategoryEnhancedParams(params)) {
+    return (await listOdooCategories({}, cookies)).items;
+  }
+
+  const items: StorefrontCategoryCard[] = [];
+  let page = 1;
+  let hasNext = true;
+
+  while (hasNext && page <= 50) {
+    const listed = await listOdooCategories({ ...params, page, pageSize: 100 }, cookies);
+    items.push(...listed.items);
+    hasNext = listed.pagination.hasNext;
+    page += 1;
+  }
+
+  return items;
+}
+
 export const listOdooBrands = cache(async (
   cookies?: OdooCookieAdapter,
 ): Promise<Array<{ id: string; slug: string; name: string }>> => {
@@ -413,7 +587,8 @@ export function mapOdooCategory(payload: OdooCatalogCategory): StorefrontCategor
     description: null,
     sortOrder: 0,
     productCount: 0,
-    image: null,
+    // Prefer category image_url; rewrite localhost/host absolute URLs to /odoo-media.
+    image: rewriteOdooImageUrl(payload.image_url),
   };
 }
 
@@ -435,8 +610,12 @@ export function applyFirstProductCategoryImages(
   }
 
   return categories.map((category) => {
+    // Keep Odoo category image_url when present; product image is fallback only.
+    if (category.image) return category;
+
     const direct = firstByCategory.get(category.id);
     if (direct) return { ...category, image: direct };
+
     const descendants = descendantCategoryIds(categories, category.id);
     for (const product of products) {
       if (!descendants.has(product.category.id)) continue;
