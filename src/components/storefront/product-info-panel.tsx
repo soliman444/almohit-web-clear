@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { duration, ease } from "../../lib/motion";
 import type { DisplayCurrencyCode } from "../../config/currencies";
-import { useFormatDisplayMoney } from "./display-currency";
 import { useFormatCatalogMoney } from "./display-currency";
 import type { StorefrontProduct } from "../../lib/catalog/types";
 import { storefrontCartProductId } from "../../lib/storefront-cart-product";
@@ -39,7 +38,8 @@ export function ProductInfoPanel({
     onChange: (next: Record<string, string>) => void;
   };
 }) {
-  const formatMoney = useFormatDisplayMoney();
+  // Catalog/PDP prices already arrive in the selected display currency from Odoo.
+  const formatMoney = useFormatCatalogMoney();
   const reduce = useReducedMotion();
   const panelShift = usePanelShift(reduce);
   const [internalSelected, setInternalSelected] = useState<Record<string, string>>({});

@@ -140,6 +140,21 @@ export async function clearOdooCart(cookies?: OdooCookieAdapter): Promise<OdooCa
   });
 }
 
+/** Switch cart pricelist currency (Authorization session + X-Currency). */
+export async function setOdooCartCurrency(
+  currencyCode: string,
+  cookies?: OdooCookieAdapter,
+): Promise<OdooCartPayload> {
+  const code = currencyCode.trim().toUpperCase();
+  return odooRequest<OdooCartPayload>("/cart/currency", {
+    method: "POST",
+    cookies,
+    captureSetCookie: false,
+    headers: { "X-Currency": code },
+    body: {},
+  });
+}
+
 export function isCartAccessDenied(error: unknown): boolean {
   if (!(error instanceof ApiClientError)) return false;
   return (

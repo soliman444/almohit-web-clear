@@ -8,7 +8,7 @@ import { loadCheckoutPage } from "../../lib/commerce/checkout-reads";
 import { requireMerchant } from "../../lib/session/access";
 import { placeOdooOrderAction } from "../../lib/actions/place-order";
 import { commerceMessage } from "../../lib/commerce/errors";
-import { formatCompanyBase, formatDisplayMoney } from "../../lib/currency/format";
+import { formatCatalogMoney } from "../../lib/currency/format";
 import { getDisplayCurrencyState } from "../../lib/currency/display";
 import type { StorefrontAddress } from "../../lib/odoo/addresses";
 
@@ -73,11 +73,11 @@ export default async function CheckoutPage({
                           {item.variantName && <span className="sf-variant-name"> · {item.variantName}</span>}
                         </span>
                         <span className="sf-cart-line-qty">
-                          {item.quantity} × {formatDisplayMoney(item.unitPrice, currency, catalog)}
+                          {item.quantity} × {formatCatalogMoney(item.unitPrice, currency, catalog)}
                         </span>
                       </div>
                       <p className="sf-cart-line-total">
-                        {formatDisplayMoney(item.lineTotal, currency, catalog)}
+                        {formatCatalogMoney(item.lineTotal, currency, catalog)}
                       </p>
                     </li>
                   ))}
@@ -98,12 +98,12 @@ export default async function CheckoutPage({
                 <div className="sf-summary-rows">
                   <div className="sf-summary-row">
                     <span>Subtotal</span>
-                    <span>{formatDisplayMoney(cart.subtotal, currency, catalog)}</span>
+                    <span>{formatCatalogMoney(cart.subtotal, currency, catalog)}</span>
                   </div>
                   {tax != null && (
                     <div className="sf-summary-row">
                       <span>Tax</span>
-                      <span>{formatDisplayMoney(tax, currency, catalog)}</span>
+                      <span>{formatCatalogMoney(tax, currency, catalog)}</span>
                     </div>
                   )}
                   {model.paymentTerm && (
@@ -116,12 +116,8 @@ export default async function CheckoutPage({
 
                 <div className="sf-summary-total">
                   <span>Total</span>
-                  <span className="sf-total-price">{formatDisplayMoney(total, currency, catalog)}</span>
+                  <span className="sf-total-price">{formatCatalogMoney(total, currency, catalog)}</span>
                 </div>
-                
-                <p className="sf-base-currency">
-                  Base currency: {formatCompanyBase(total, catalog)}
-                </p>
               </div>
             </div>
 

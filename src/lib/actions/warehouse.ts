@@ -51,12 +51,15 @@ function parseMoveQtyLines(formData: FormData) {
   const moveIds = formData.getAll("moveId").map((v) => String(v).trim());
   const qtys = formData.getAll("quantityDone").map((v) => String(v).trim());
   const warehouseIds = formData.getAll("warehouseId").map((v) => String(v).trim());
+  const fallbackWarehouseId = parseOdooRecordId(value(formData, "fallbackWarehouseId"));
   const lines: Array<{ moveId: string; quantityDone: number; warehouseId: number }> = [];
   for (let i = 0; i < moveIds.length; i += 1) {
     const moveId = moveIds[i];
     const qty = Number(qtys[i]);
-    const warehouseId = parseOdooRecordId(warehouseIds[i] ?? "");
-    if (!moveId || !warehouseId || !Number.isFinite(qty) || qty < 0) continue;
+    const warehouseId =
+      parseOdooRecordId(warehouseIds[i] ?? "")
+      || fallbackWarehouseId;
+    if (!moveId || !warehouseId || !Number.isFinite(qty) || qty <= 0) continue;
     lines.push({ moveId, quantityDone: qty, warehouseId });
   }
   return lines;

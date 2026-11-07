@@ -70,12 +70,24 @@ export default async function WarehouseIssueDetailPage({
     && issue.state !== "done"
     && issue.state !== "cancel"
     && issue.paymentOk;
-  const defaultWarehouseId =
-    issue.suggestedWarehouse?.id
-    || issue.currentWarehouse?.id
-    || issue.warehouse?.id
-    || issue.availableWarehouses[0]?.id
-    || "";
+  // Options must include any suggested/current warehouse so defaultValue always matches a real <option>.
+  const warehouseOptions = (() => {
+    const byId = new Map(
+      issue.availableWarehouses.map((wh) => [wh.id, { id: wh.id, name: wh.name, lines: wh.lines }]),
+    );
+    for (const wh of [issue.suggestedWarehouse, issue.currentWarehouse, issue.warehouse]) {
+      if (wh?.id && !byId.has(wh.id)) {
+        byId.set(wh.id, { id: wh.id, name: wh.name, lines: undefined });
+      }
+    }
+    return [...byId.values()];
+  })();
+  const defaultWarehouseId = (
+    [issue.suggestedWarehouse?.id, issue.currentWarehouse?.id, issue.warehouse?.id]
+      .find((id) => id && warehouseOptions.some((wh) => wh.id === id))
+    || warehouseOptions[0]?.id
+    || ""
+  );
 
   return (
     <StorefrontShell>
@@ -109,6 +121,9 @@ export default async function WarehouseIssueDetailPage({
           {canDispatch ? (
             <OnceForm action={dispatchWarehouseIssueAction}>
               <input type="hidden" name="pickingId" value={issue.id} />
+              {defaultWarehouseId ? (
+                <input type="hidden" name="fallbackWarehouseId" value={defaultWarehouseId} />
+              ) : null}
               {distributors.length > 0 && (
                 <label className={fieldClassName("sf-biz-field", formError?.fields, "distributorUserId")}>
                   Distributor (optional)
@@ -146,23 +161,34 @@ export default async function WarehouseIssueDetailPage({
                         </th>
                         <td>{line.sourceLocation?.name || "—"}</td>
                         <td className={warehouseInvalid ? "is-invalid" : undefined}>
-                          <select
-                            name="warehouseId"
-                            required
-                            defaultValue={defaultWarehouseId}
-                            aria-invalid={warehouseInvalid || undefined}
-                          >
-                            <option value="" disabled>Select warehouse</option>
-                            {issue.availableWarehouses.map((wh) => {
-                              const hint = wh.lines?.find((row) => row.productId === line.product.id);
-                              const freeLabel = hint?.freeQty != null ? ` · free ${hint.freeQty}` : "";
-                              return (
-                                <option key={wh.id} value={wh.id}>
-                                  {wh.name}{freeLabel}
-                                </option>
-                              );
-                            })}
-                          </select>
+                          {warehouseOptions.length === 0 ? (
+                            <span className="muted">No warehouse available</span>
+                          ) : warehouseOptions.length === 1 ? (
+                            <>
+                              <input type="hidden" name="warehouseId" value={warehouseOptions[0].id} />
+                              {warehouseOptions[0].name}
+                            </>
+                          ) : (
+                            <select
+                              name="warehouseId"
+                              required
+                              defaultValue={defaultWarehouseId}
+                              aria-invalid={warehouseInvalid || undefined}
+                            >
+                              {!defaultWarehouseId && (
+                                <option value="" disabled>Select warehouse</option>
+                              )}
+                              {warehouseOptions.map((wh) => {
+                                const hint = wh.lines?.find((row) => row.productId === line.product.id);
+                                const freeLabel = hint?.freeQty != null ? ` · free ${hint.freeQty}` : "";
+                                return (
+                                  <option key={wh.id} value={wh.id}>
+                                    {wh.name}{freeLabel}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          )}
                         </td>
                         <td className="is-num">
                           {line.orderedQty}{line.uom ? ` ${line.uom.name}` : ""}
@@ -172,7 +198,7 @@ export default async function WarehouseIssueDetailPage({
                           <input
                             name="quantityDone"
                             type="number"
-                            min="0"
+                            min="0.0001"
                             step="any"
                             required
                             aria-invalid={qtyInvalid || undefined}
@@ -188,7 +214,11 @@ export default async function WarehouseIssueDetailPage({
                   </tbody>
                 </table>
               </div>
-              <OnceSubmit className="sf-btn" pendingLabel="Dispatching…">
+              <OnceSubmit
+                className="sf-btn"
+                pendingLabel="Dispatching…"
+                disabled={warehouseOptions.length === 0}
+              >
                 <span>Dispatch to output</span>
               </OnceSubmit>
             </OnceForm>

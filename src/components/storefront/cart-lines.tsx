@@ -8,13 +8,14 @@ import {
 } from "../../lib/actions/cart";
 import type { CartView, CartViewItem } from "../../lib/commerce/cart-view";
 import { commerceMessage } from "../../lib/commerce/errors";
-import { companyCurrencyCode, formatCompanyBase, formatDisplayMoney } from "../../lib/currency/format";
+import { formatCatalogMoney } from "../../lib/currency/format";
 import { useCartSession } from "./cart-session";
 import { ClearCartButton } from "./clear-cart-button";
-import { useFormatDisplayMoney } from "./display-currency";
+import { useFormatCatalogMoney } from "./display-currency";
 
 export function CartLines({ items, next }: { items: CartViewItem[]; next: string }) {
-  const formatMoney = useFormatDisplayMoney();
+  // Cart amounts follow the cart pricelist currency (synced via POST /cart/currency).
+  const formatMoney = useFormatCatalogMoney();
   const { cart, runCartMutation, pending } = useCartSession();
   const rows = cart?.items ?? items;
   return (
@@ -152,24 +153,18 @@ export function CartPageBody({
               <tbody>
                 <tr>
                   <th scope="row">Subtotal</th>
-                  <td>{formatDisplayMoney(cart.subtotal, currency, catalog)}</td>
+                  <td>{formatCatalogMoney(cart.subtotal, currency, catalog)}</td>
                 </tr>
                 {tax != null && (
                   <tr>
                     <th scope="row">Tax</th>
-                    <td>{formatDisplayMoney(tax, currency, catalog)}</td>
+                    <td>{formatCatalogMoney(tax, currency, catalog)}</td>
                   </tr>
                 )}
                 <tr>
                   <th scope="row">Total</th>
-                  <td className="sf-cart-total">{formatDisplayMoney(total ?? cart.subtotal, currency, catalog)}</td>
+                  <td className="sf-cart-total">{formatCatalogMoney(total ?? cart.subtotal, currency, catalog)}</td>
                 </tr>
-                {currency !== companyCurrencyCode(catalog) && (
-                  <tr>
-                    <th scope="row">Base currency</th>
-                    <td className="muted">{formatCompanyBase(total ?? cart.subtotal, catalog)}</td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </section>
