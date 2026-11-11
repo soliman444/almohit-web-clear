@@ -37,6 +37,7 @@ export type StorefrontProduct = {
   description: string | null;
   minOrderQuantity: number;
   isFeatured: boolean;
+  isFavorite: boolean;
   isNew: boolean;
   productType: "SIMPLE" | "VARIABLE";
   category: { id: string; name: string; slug: string };
@@ -53,6 +54,7 @@ export type StorefrontProduct = {
   }>;
   inStock: boolean;
   availableQuantity?: number;
+  unitOfMeasure: { id: string; name: string } | null;
   price: { amount: string; currency: string } | null;
   attributes?: Array<{
     id: string;
@@ -177,6 +179,7 @@ export type OdooCatalogProduct = {
   availability?: OdooAvailability;
   uom?: OdooNamedRef | null;
   has_variants?: boolean;
+  is_favorite?: boolean;
   variants?: OdooCatalogVariant[];
   description?: string | null;
   barcode?: string | null;
@@ -643,6 +646,7 @@ export function mapOdooProduct(payload: OdooCatalogProduct): StorefrontProduct {
     description: payload.description ?? null,
     minOrderQuantity: typeof payload.min_order_qty === "number" ? payload.min_order_qty : 1,
     isFeatured: false,
+    isFavorite: Boolean(payload.is_favorite),
     isNew: false,
     productType: payload.has_variants ? "VARIABLE" : "SIMPLE",
     category: {
@@ -661,6 +665,7 @@ export function mapOdooProduct(payload: OdooCatalogProduct): StorefrontProduct {
     inStock: Boolean(payload.availability?.in_stock),
     availableQuantity: asAvailableQty(payload.availability?.qty_available),
     price: price ?? null,
+    unitOfMeasure: payload.uom ? { id: String(payload.uom.id), name: payload.uom.name } : null,
     attributes,
     variants,
   };

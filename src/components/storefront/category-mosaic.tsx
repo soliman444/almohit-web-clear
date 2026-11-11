@@ -28,13 +28,18 @@ export function CategoryMosaic({
               src={category.image || EDITORIAL.oil}
               alt={category.name}
               seed={category.slug}
-              sizes={variant === "circle" ? "(max-width: 900px) 30vw, 12vw" : "(max-width: 900px) 50vw, 32vw"}
+              sizes={
+                variant === "circle"
+                  ? "(max-width: 700px) 34vw, (max-width: 1100px) 18vw, 160px"
+                  : "(max-width: 700px) 50vw, (max-width: 1100px) 33vw, 420px"
+              }
               preset="category-card"
               categorySlug={category.slug}
-              fitMode={category.imageFraming?.fitMode}
-              focalX={category.imageFraming?.focalX}
-              focalY={category.imageFraming?.focalY}
-              scale={category.imageFraming?.scale}
+              fit="cover"
+              fitMode="COVER"
+              focalX={category.imageFraming?.focalX ?? 50}
+              focalY={category.imageFraming?.focalY ?? 50}
+              scale={1}
               className="sf-fill"
             />
           </div>

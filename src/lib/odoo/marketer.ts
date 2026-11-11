@@ -12,6 +12,9 @@ export type CreateMarketerMerchantInput = {
   phone?: string;
   street: string;
   city: string;
+  countryCode: string;
+  latitude?: number;
+  longitude?: number;
   managerName: string;
   employeeName?: string;
   bankAccount: string;
@@ -30,11 +33,14 @@ export function marketerMerchantBody(input: CreateMarketerMerchantInput) {
     tax_number: input.taxNumber,
     street: input.street,
     city: input.city,
+    country_code: input.countryCode,
     manager_name: input.managerName,
     bank_account: input.bankAccount,
     payment_method: input.paymentMethod,
     ...(input.businessType ? { business_type: input.businessType } : {}),
     ...(input.phone ? { phone: input.phone } : {}),
+    ...(input.latitude !== undefined ? { latitude: input.latitude } : {}),
+    ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
     ...(input.employeeName ? { employee_name: input.employeeName } : {}),
     ...(input.shopImageBase64 ? { shop_image_base64: input.shopImageBase64 } : {}),
     ...(input.shopImageContentType ? { shop_image_content_type: input.shopImageContentType } : {}),

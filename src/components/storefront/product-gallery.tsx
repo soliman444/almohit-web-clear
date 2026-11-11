@@ -365,12 +365,12 @@ export function ProductGallery({
                   priority
                   allowFallback={false}
                   preset="product-detail"
-                  isolated={current.isolated}
                   categorySlug={categorySlug}
-                  fitMode={current.fitMode}
-                  focalX={current.focalX}
-                  focalY={current.focalY}
-                  scale={current.scale}
+                  fit="cover"
+                  fitMode="COVER"
+                  focalX={current.focalX ?? 50}
+                  focalY={current.focalY ?? 50}
+                  scale={1}
                   onStatus={(status) => {
                     if (status === "error") {
                       setFailed((value) => ({
@@ -412,13 +412,13 @@ export function ProductGallery({
         </motion.button>
       </motion.div>
 
-      {shots.length > 0 && (
-        <div className="sf-pdp-thumbs">
+      {shots.length > 1 && (
+        <div className="sf-pdp-thumbs is-visual" aria-label="Product images">
           {shots.map((shot, item) => (
             <button
               key={shot.src}
               type="button"
-              className={`sf-pdp-thumb${
+              className={`sf-pdp-thumb is-visual${
                 item === index
                   ? " is-active"
                   : ""
@@ -431,16 +431,28 @@ export function ProductGallery({
                   : undefined
               }
             >
-              {String(item + 1).padStart(2, "0")}
+              <span className="sf-pdp-thumb-frame">
+                <MediaFrame
+                  src={shot.src}
+                  alt=""
+                  seed={`${slug}-thumb-${item}`}
+                  sizes="88px"
+                  allowFallback={false}
+                  preset="product-card"
+                  fit="cover"
+                  fitMode="COVER"
+                  focalX={50}
+                  focalY={50}
+                  scale={1}
+                />
+              </span>
             </button>
           ))}
 
           <span className="sf-pdp-counter">
             {String(index + 1).padStart(2, "0")}
             {" / "}
-            {String(
-              Math.max(shots.length, 1),
-            ).padStart(2, "0")}
+            {String(shots.length).padStart(2, "0")}
           </span>
         </div>
       )}

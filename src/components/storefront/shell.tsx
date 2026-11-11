@@ -22,8 +22,15 @@ export async function StorefrontShell({
     <DisplayCurrencyProvider currency={currency} catalog={catalog}>
       <PriceAccessProvider canViewWholesalePrices={status.canViewWholesalePrices}>
         <div className="sf">
+          <div className="sf-site-backdrop" aria-hidden>
+            <span className="sf-site-backdrop-wash" />
+            <span className="sf-site-backdrop-orb is-leaf" />
+            <span className="sf-site-backdrop-orb is-warm" />
+            <span className="sf-site-backdrop-grid" />
+            <span className="sf-site-backdrop-grain" />
+          </div>
           <StorefrontHeader transparent={transparentHeader} currency={currency} currencies={catalog}>
-            <PageFade>{children}</PageFade>
+            <PageFade className="sf-site-stage">{children}</PageFade>
             <SiteFooter />
             <FloatingDock />
           </StorefrontHeader>

@@ -1,11 +1,30 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { MediaFrame } from "../../components/storefront/media-frame";
 import { StorefrontShell } from "../../components/storefront/shell";
 import { EDITORIAL } from "../../components/storefront/visuals";
 import { OnceForm, OnceSubmit } from "../../components/storefront/once-submit";
 import { loginAction } from "../../lib/actions/auth";
+import {
+  getSessionUser,
+  hasOdooSession,
+  logoutCurrentCustomer,
+} from "../../lib/odoo/auth";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  // Only skip login when the session is actually valid — a leftover cookie alone
+  // used to bounce /login straight to home and block sign-in.
+  let session = null;
+  try {
+    session = await getSessionUser();
+  } catch {
+    session = null;
+  }
+  if (session) redirect("/");
+  if (await hasOdooSession()) {
+    await logoutCurrentCustomer();
+  }
+
   const { error } = await searchParams;
   return (
     <StorefrontShell>

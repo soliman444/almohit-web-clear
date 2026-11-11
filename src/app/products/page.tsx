@@ -69,7 +69,7 @@ export default async function ProductsPage({
     <StorefrontShell>
       <main className="sf-page">
         <header className="sf-page-banner">
-          <ImageShot src={EDITORIAL.night} alt="" sizes="100vw" priority preset="campaign" className="sf-fill" />
+          <ImageShot src={EDITORIAL.orchard} alt="" sizes="100vw" priority preset="campaign" className="sf-fill" />
           <div className="sf-page-top">
             <h1 className="sf-page-title">
               {term ? "Results" : sort === "oldest" ? "Oldest" : sort === "name_asc" ? "A–Z" : sort === "name_desc" ? "Z–A" : "Just in"}

@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { CatalogPager } from "../components/storefront/catalog-pager";
 import { CinematicHero } from "../components/storefront/cinematic-hero";
 import { CategoryMosaic } from "../components/storefront/category-mosaic";
-import { FeaturedCollections } from "../components/storefront/featured-collections";
+import { HomeAdBanner } from "../components/storefront/home-ad-banner";
 import { OffersSection } from "../components/storefront/promo-system";
 import { ProductFinder } from "../components/storefront/product-finder";
 import { ProductGrid } from "../components/storefront/product-grid";
@@ -24,6 +25,7 @@ import {
 } from "../lib/catalog/filters";
 import { homeCatalogSlices } from "../lib/catalog/home";
 import { fetchStorefrontProducts } from "../lib/catalog/products";
+import { hasOdooSession } from "../lib/odoo/auth";
 import { listOdooBrands } from "../lib/odoo/catalog";
 import { safeApiCall } from "../lib/odoo/safe";
 
@@ -34,6 +36,8 @@ export default async function HomePage({
 }: {
   searchParams: Promise<FinderQuery>;
 }) {
+  if (!(await hasOdooSession())) redirect("/login");
+
   const query = await searchParams;
   const term = query.q?.trim();
   const page = parseCatalogPage(query.page);
@@ -111,8 +115,19 @@ export default async function HomePage({
           : "Newest arrivals";
 
   return (
-    <StorefrontShell transparentHeader>
-      <ScrollToId id="catalog" enabled={catalogActive} />
+    <StorefrontShell>
+      <ScrollToId
+        id="catalog"
+        enabled={Boolean(
+          term
+          || query.category
+          || query.brand
+          || query.min_moq
+          || query.max_moq
+          || query.availability
+          || page > 1,
+        )}
+      />
 
       <CinematicHero
         collections={home.collections}
@@ -120,6 +135,40 @@ export default async function HomePage({
         focalY={homeHero?.heroFocalY}
         frameScale={homeHero?.heroScale}
       />
+
+      <ProductRail
+        products={
+          sort === "newest"
+            ? home.newArrivals
+            : listed.items.slice(0, 6)
+        }
+        index="01"
+        eyebrow="New"
+        title={
+          sort === "oldest"
+            ? "Oldest first."
+            : sort === "name_asc"
+              ? "Name A–Z."
+              : sort === "name_desc"
+                ? "Name Z–A."
+                : "Newest arrivals."
+        }
+        sort={sort}
+        query={query}
+      />
+
+      <section className="sf-section sf-home-search" id="search" aria-label="Product search">
+        <div className="sf-home-catalog-tools is-search-only">
+          <ProductFinder
+            categories={categories}
+            brands={brands}
+            query={query}
+            compact
+            action="/"
+            hash="#catalog"
+          />
+        </div>
+      </section>
 
       <section
         className="sf-section sf-home-categories"
@@ -163,9 +212,14 @@ export default async function HomePage({
         />
       </section>
 
-      {home.roots.length > 0 ? (
-        <FeaturedCollections
-          categories={home.roots.slice(0, 3)}
+      {home.promos[0] ? (
+        <HomeAdBanner
+          promo={home.promos[0]}
+          imageCategory={
+            home.roots.find((category) => category.slug === home.promos[0]?.categorySlug)
+            ?? home.roots[0]
+            ?? null
+          }
         />
       ) : null}
 
@@ -186,16 +240,7 @@ export default async function HomePage({
           </p>
         </div>
 
-        <div className="sf-home-catalog-tools">
-          <ProductFinder
-            categories={categories}
-            brands={brands}
-            query={query}
-            compact
-            action="/"
-            hash="#catalog"
-          />
-
+        <div className="sf-home-catalog-tools is-sort-only">
           <div className="sf-home-sort-chips" aria-label="Quick sort">
             <Link
               className={sort === "newest" ? "is-active" : undefined}
@@ -245,6 +290,22 @@ export default async function HomePage({
         />
       </section>
 
+      <OffersSection
+        promos={home.promos.slice(0, 3)}
+        categories={home.roots}
+      />
+
+      {!catalogActive && home.favorites.length ? (
+        <ProductRail
+          products={home.favorites.slice(0, 6)}
+          index="02"
+          eyebrow="Starred"
+          title="On the star list."
+          showSort={false}
+          sectionId="starred"
+        />
+      ) : null}
+
       {!catalogActive ? (
         <ProductRail
           products={
@@ -255,12 +316,10 @@ export default async function HomePage({
           index="03"
           eyebrow="Selected"
           title="Ready to supply."
+          showSort={false}
+          sectionId="selected"
         />
       ) : null}
-
-      <OffersSection
-        promos={home.promos.slice(0, 3)}
-      />
 
       {home.brands.length > 0 ? (
         <section

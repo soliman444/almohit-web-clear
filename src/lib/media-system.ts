@@ -114,6 +114,8 @@ export function getMediaFit(input: {
   if (input.fit) return input.fit;
   if (input.fitMode === "COVER") return "cover";
   if (input.fitMode === "CONTAIN") return "contain";
+  // Product cards fill their frame cleanly; isolated cutouts still use contain.
+  if (input.mediaContext === "product-card") return "cover";
   return resolveMediaMode(input) === "ISOLATED_PRODUCT" ? "contain" : "cover";
 }
 
@@ -132,17 +134,18 @@ export function resolveMediaPresentation(input: {
   categorySlug?: string | null;
 }) {
   const mode = resolveMediaMode(input);
-  const isolatedCard = mode === "ISOLATED_PRODUCT" && input.mediaContext === "product-card";
+  const fit = getMediaFit({ ...input, mode });
   const fallback = parsePositionPair(mediaPositionFor(input.categorySlug));
   const scale = clampScale(input.scale ?? DEFAULT_FRAMING.visualScale);
   return {
     mode,
-    fit: getMediaFit({ ...input, mode }),
+    fit,
     focalX: clampFocal(input.focalX ?? fallback.x),
     focalY: clampFocal(input.focalY ?? fallback.y),
     scale,
     hover: hoverScale(scale, mode),
     zoom: MEDIA_ZOOM[mode],
-    padding: isolatedCard ? "8%" : undefined,
+    // Product-card inset is handled in CSS; padding on fill <img> stretches/distorts.
+    padding: undefined,
   };
 }

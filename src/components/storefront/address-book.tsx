@@ -8,6 +8,12 @@ import {
   updateAddressAction,
 } from "../../lib/actions/addresses";
 import type { AddressDto } from "@/types/contracts";
+import {
+  DEFAULT_COUNTRY_CODE,
+  STOREFRONT_COUNTRIES,
+  countryName as geoCountryName,
+  normalizeCountryCode,
+} from "../../lib/geo/countries";
 import { OnceForm, OnceSubmit } from "./once-submit";
 
 type BookAddress = AddressDto & {
@@ -16,27 +22,8 @@ type BookAddress = AddressDto & {
   countryId?: string | null;
 };
 
-const COUNTRIES = [
-  { code: "SA", name: "Saudi Arabia" },
-  { code: "AE", name: "United Arab Emirates" },
-  { code: "YE", name: "Yemen" },
-  { code: "KW", name: "Kuwait" },
-  { code: "QA", name: "Qatar" },
-  { code: "BH", name: "Bahrain" },
-  { code: "OM", name: "Oman" },
-  { code: "EG", name: "Egypt" },
-  { code: "JO", name: "Jordan" },
-  { code: "IQ", name: "Iraq" },
-];
-
 function countryValue(address?: BookAddress) {
-  const code = address?.countryCode || address?.country || "SA";
-  return code.length === 2 ? code.toUpperCase() : "SA";
-}
-
-function countryName(codeOrName: string) {
-  const code = codeOrName.length === 2 ? codeOrName.toUpperCase() : "";
-  return COUNTRIES.find((item) => item.code === code)?.name ?? codeOrName;
+  return normalizeCountryCode(address?.countryCode || address?.country, DEFAULT_COUNTRY_CODE);
 }
 
 function AddressFields({
@@ -51,7 +38,7 @@ function AddressFields({
   defaultPhone: string;
 }) {
   const country = countryValue(address);
-  const known = COUNTRIES.some((item) => item.code === country);
+  const known = STOREFRONT_COUNTRIES.some((item) => item.code === country);
   return (
     <div className="sf-address-form">
       <label className="sf-field">
@@ -82,7 +69,7 @@ function AddressFields({
       <label className="sf-field">
         Country
         <select name="country" defaultValue={known ? country : "SA"} required>
-          {COUNTRIES.map((item) => (
+          {STOREFRONT_COUNTRIES.map((item) => (
             <option key={item.code} value={item.code}>{item.name}</option>
           ))}
         </select>
@@ -115,7 +102,7 @@ function AddressCard({
           <span className="sf-invoice-dates">{address.recipient}</span>
           {street ? <span className="sf-invoice-order">{street}</span> : null}
           {cityLine ? <span className="sf-invoice-order">{cityLine}</span> : null}
-          <span className="sf-invoice-order">{countryName(address.country)}</span>
+          <span className="sf-invoice-order">{geoCountryName(address.country)}</span>
           {address.phone ? <span className="sf-invoice-due">{address.phone}</span> : null}
         </div>
 

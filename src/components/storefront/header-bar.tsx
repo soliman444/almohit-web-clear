@@ -128,17 +128,19 @@ export function HeaderBar({
             <span className="sf-nav-link is-quiet">Service unavailable</span>
           ) : (
             <>
-              {!isStaff && (
-                <Link className="sf-nav-link" href={signedIn ? "/account" : "/login"}>{signedIn ? "My account" : "Log in"}</Link>
-              )}
+              <div className="sf-nav-tools-auth">
+                {!isStaff && (
+                  <Link className="sf-nav-link" href={signedIn ? "/account" : "/login"}>{signedIn ? "My account" : "Log in"}</Link>
+                )}
+                {!signedIn && <Link className="sf-nav-link" href="/register">Sign up</Link>}
+                {!signedIn && <Link className="sf-btn is-compact" href="/register">Request</Link>}
+                {signedIn && <SignOutButton />}
+              </div>
               {canBuy && (
                 <CartDrawer cart={cartView} canBuy={canBuy} signedIn={signedIn} />
               )}
-              {!signedIn && <Link className="sf-nav-link" href="/register">Sign up</Link>}
-              {!signedIn && <Link className="sf-btn is-compact" href="/register">Request</Link>}
             </>
           )}
-          {signedIn && <SignOutButton />}
         </div>
       </header>
 
@@ -203,13 +205,22 @@ export function HeaderBar({
                     <Link href="/cart" onClick={() => setMenu(false)}>Cart</Link>
                   </motion.div>
                   )}
+                  {!signedIn && (
+                  <motion.div
+                    initial={reduce ? false : { y: 36, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: stagger.display * (links.length + 3), duration: duration.slow, ease: easeOut }}
+                  >
+                    <Link href="/register" onClick={() => setMenu(false)}>Sign up</Link>
+                  </motion.div>
+                  )}
                 </>
               )}
               {signedIn && (
                 <motion.div
                   initial={reduce ? false : { y: 36, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: stagger.display * (links.length + 3), duration: duration.slow, ease: easeOut }}
+                  transition={{ delay: stagger.display * (links.length + 4), duration: duration.slow, ease: easeOut }}
                 >
                   <SignOutButton />
                 </motion.div>

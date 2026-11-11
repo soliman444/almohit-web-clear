@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ApiClientError, ApiUnavailableError } from "../odoo/errors";
 import { isOdooAuthError } from "../odoo/auth";
+import { DEFAULT_COUNTRY_CODE, normalizeCountryCode } from "../geo/countries";
 import { createMarketerMerchant } from "../odoo/marketer";
 import { requireMarketer } from "../session/access";
 
@@ -12,8 +13,17 @@ function value(fd: FormData, key: string) {
   return String(fd.get(key) ?? "").trim();
 }
 
+function optionalCoord(raw: string): number | undefined {
+  if (!raw) return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : undefined;
+}
+
 export async function createMarketerMerchantAction(formData: FormData) {
   await requireMarketer();
+  const countryCode = normalizeCountryCode(value(formData, "countryCode"), "");
+  const latitude = optionalCoord(value(formData, "latitude"));
+  const longitude = optionalCoord(value(formData, "longitude"));
   const parsed = z.object({
     name: z.string().min(2).max(120),
     email: z.string().email(),
@@ -24,6 +34,9 @@ export async function createMarketerMerchantAction(formData: FormData) {
     phone: z.string().max(30).optional(),
     city: z.string().min(2).max(120),
     address: z.string().min(4).max(300),
+    countryCode: z.string().length(2),
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
     managerName: z.string().min(2).max(120),
     employeeName: z.string().max(120).optional(),
     bankAccount: z.string().min(4).max(80),
@@ -39,6 +52,9 @@ export async function createMarketerMerchantAction(formData: FormData) {
     phone: value(formData, "phone") || undefined,
     city: value(formData, "city"),
     address: value(formData, "address"),
+    countryCode: countryCode || undefined,
+    latitude,
+    longitude,
     managerName: value(formData, "managerName"),
     employeeName: value(formData, "employeeName") || undefined,
     bankAccount: value(formData, "bankAccount"),
@@ -46,6 +62,9 @@ export async function createMarketerMerchantAction(formData: FormData) {
     notes: value(formData, "notes") || undefined,
   });
   if (!parsed.success) redirect("/account/merchants/new?error=kyc");
+  if ((parsed.data.latitude === undefined) !== (parsed.data.longitude === undefined)) {
+    redirect("/account/merchants/new?error=kyc");
+  }
 
   try {
     const image = formData.get("shopImage");
@@ -61,6 +80,9 @@ export async function createMarketerMerchantAction(formData: FormData) {
       phone: parsed.data.phone,
       street: parsed.data.address,
       city: parsed.data.city,
+      countryCode: parsed.data.countryCode || DEFAULT_COUNTRY_CODE,
+      latitude: parsed.data.latitude,
+      longitude: parsed.data.longitude,
       managerName: parsed.data.managerName,
       employeeName: parsed.data.employeeName,
       bankAccount: parsed.data.bankAccount,

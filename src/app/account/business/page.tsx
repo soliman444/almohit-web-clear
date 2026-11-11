@@ -111,6 +111,9 @@ export default async function BusinessPage({
     paymentMethod: application?.paymentMethod ?? "",
     notes: application?.notes ?? "",
     shopImageUrl: application?.shopImageUrl,
+    countryCode: application?.countryCode ?? "",
+    latitude: application?.latitude,
+    longitude: application?.longitude,
   };
 
   return (

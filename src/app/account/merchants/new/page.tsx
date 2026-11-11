@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LocationFields } from "../../../../components/storefront/location-map-picker";
 import { OnceForm, OnceSubmit } from "../../../../components/storefront/once-submit";
 import { StorefrontShell } from "../../../../components/storefront/shell";
 import { createMarketerMerchantAction } from "../../../../lib/actions/marketer";
@@ -60,6 +61,7 @@ export default async function NewMerchantPage({
                 <label className="sf-biz-field">Business type<input name="businessType" placeholder="Grocery, dates shop, wholesaler…" dir="auto" /></label>
                 <label className="sf-biz-field">City<input name="city" required dir="auto" /></label>
                 <label className="sf-biz-field is-span-3">Shop address<input name="address" required dir="auto" /></label>
+                <LocationFields />
               </div>
             </section>
             <section className="sf-biz-block">

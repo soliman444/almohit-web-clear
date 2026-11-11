@@ -2,10 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { duration, ease } from "../../lib/motion";
 import type { DisplayCurrencyCode } from "../../config/currencies";
-import { useFormatCatalogMoney } from "./display-currency";
+import { getCurrencyConfig } from "../../lib/currency/format";
+import {
+  useCurrencyCatalog,
+  useDisplayCurrency,
+  useFormatCatalogMoney,
+} from "./display-currency";
 import type { StorefrontProduct } from "../../lib/catalog/types";
 import { storefrontCartProductId } from "../../lib/storefront-cart-product";
 import { AddToCartForm } from "./add-to-cart-form";
@@ -13,7 +18,7 @@ import { ButtonLink } from "./button-link";
 import { VariantPicker, resolveSelectedVariant } from "./variant-picker";
 
 const fade = {
-  hidden: { opacity: 0, y: 14 },
+  hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0 },
 };
 
@@ -38,10 +43,11 @@ export function ProductInfoPanel({
     onChange: (next: Record<string, string>) => void;
   };
 }) {
-  // Catalog/PDP prices already arrive in the selected display currency from Odoo.
   const formatMoney = useFormatCatalogMoney();
+  const displayCurrency = useDisplayCurrency();
+  const currencyCatalog = useCurrencyCatalog();
+  const currencyConfig = getCurrencyConfig(displayCurrency, currencyCatalog);
   const reduce = useReducedMotion();
-  const panelShift = usePanelShift(reduce);
   const [internalSelected, setInternalSelected] = useState<Record<string, string>>({});
   const selected = selection?.selected ?? internalSelected;
   const setSelected = selection?.onChange ?? setInternalSelected;
@@ -53,143 +59,110 @@ export function ProductInfoPanel({
   const price = variable ? variant?.price : product.price ?? undefined;
   const cartProductId = storefrontCartProductId(product, variant?.id);
 
+  const stockLabel = !variable || variant
+    ? inStock
+      ? "Ready to supply"
+      : "Currently unavailable"
+    : "Select options";
+
+  const facts = [
+    ["Collection", product.category.name],
+    ["Brand", product.brand?.name ?? "Almohit"],
+    ["SKU", sku],
+    ["Minimum order", String(product.minOrderQuantity)],
+    ["UOM", product.unitOfMeasure?.name],
+  ] as const;
+
+  const formattedPrice = price ? formatMoney(price.amount) : null;
+  const priceAmount = formattedPrice
+    ? formattedPrice.startsWith(currencyConfig.symbol)
+      ? formattedPrice.slice(currencyConfig.symbol.length).trim()
+      : formattedPrice
+    : null;
+
   return (
-    <motion.div className="sf-pdp-panel" style={panelShift}>
-      <motion.p
-        className="sf-kicker sf-pdp-kicker"
-        initial={reduce ? false : "hidden"}
-        animate="show"
-        variants={fade}
-        transition={{ duration: duration.base, ease, delay: 0 }}
-      >
-        <Link href={`/categories/${product.category.slug}`}>{product.category.name}</Link>
-        {product.brand ? `  /  ${product.brand.name}` : ""}
-      </motion.p>
-      <h1>
-        {product.name.split(/\s+/).map((word, index) => (
-          <span className="sf-clip" key={`${word}-${index}`}>
-            <motion.span
-              className="sf-line"
-              initial={reduce ? false : { y: "108%" }}
-              animate={{ y: "0%" }}
-              transition={{ duration: 0.68, ease, delay: 0.14 + index * 0.07 }}
-            >
-              {word}
-            </motion.span>
-          </span>
-        ))}
-      </h1>
-      <motion.p
-        className="sf-sku"
-        initial={reduce ? false : "hidden"}
-        animate="show"
-        variants={fade}
-        transition={{ duration: duration.base, ease, delay: 0.22 }}
-      >
-        SKU {sku}
-      </motion.p>
-      {product.shortDescription && (
-        <motion.p
-          className="sf-pdp-lede"
-          initial={reduce ? false : "hidden"}
-          animate="show"
-          variants={fade}
-          transition={{ duration: duration.base, ease, delay: 0.26 }}
-        >
-          {product.shortDescription}
-        </motion.p>
-      )}
-
-      <motion.hr
-        className="sf-pdp-rule"
-        initial={reduce ? false : { scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ duration: 0.42, ease, delay: 0.3 }}
-      />
-
-      <motion.div
-        className="sf-price-box"
-        initial={reduce ? false : "hidden"}
-        animate="show"
-        variants={fade}
-        transition={{ duration: duration.base, ease, delay: 0.38 }}
-      >
-        {!showPrices ? (
-          <p>Price available to approved merchants</p>
-        ) : price ? (
-          <p className="sf-pdp-price">{formatMoney(price.amount)}</p>
-        ) : variable && !variant ? (
-          <p>Select options to see price</p>
-        ) : (
-          <p>This option is not priced for your account.</p>
-        )}
-      </motion.div>
-
-      {variable && <VariantPicker product={product} selected={selected} onChange={setSelected} />}
-
-      <motion.hr
-        className="sf-pdp-rule"
-        initial={reduce ? false : { scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ duration: 0.42, ease, delay: 0.44 }}
-      />
-
-      <motion.div
-        className="sf-pdp-utility"
-        initial={reduce ? false : "hidden"}
-        animate="show"
-        variants={fade}
-        transition={{ duration: duration.base, ease, delay: 0.56 }}
-      >
-        {variable && !variant && (
-          <p className="sf-count">Select options before adding to cart.</p>
-        )}
-        {(!variable || variant) && (
-          <p className="sf-count">
-            {inStock
-              ? availableQuantity != null
-                ? `Available: ${availableQuantity}`
-                : "Available to supply"
-              : "Currently unavailable"}
+    <motion.aside
+      className="sf-pdp-panel is-rich"
+      initial={reduce ? false : "hidden"}
+      animate="show"
+      variants={fade}
+      transition={{ duration: duration.reveal, ease }}
+    >
+      <div className="sf-pdp-card">
+        <div className="sf-pdp-card-top">
+          <p className="sf-pdp-kicker">
+            <Link href={`/categories/${product.category.slug}`}>{product.category.name}</Link>
+            {product.brand ? <span> · {product.brand.name}</span> : null}
           </p>
-        )}
-        <p className="sf-count">Minimum order: {product.minOrderQuantity}</p>
-      </motion.div>
+          <h1>{product.name}</h1>
+          {product.shortDescription ? (
+            <p className="sf-pdp-lede">{product.shortDescription}</p>
+          ) : null}
+        </div>
 
-      {notice && <p>{notice}</p>}
-      {error && <p className="error">{error}</p>}
+        <div className="sf-pdp-buy-head">
+          <div className="sf-price-box">
+            {!showPrices ? (
+              <p>Price available to approved merchants</p>
+            ) : formattedPrice && priceAmount ? (
+              <>
+                <span className="sf-pdp-price-label">Wholesale price</span>
+                <p className="sf-pdp-price" aria-label={formattedPrice}>
+                  <span className="sf-pdp-price-currency">{currencyConfig.symbol}</span>
+                  <span className="sf-pdp-price-amount">{priceAmount}</span>
+                </p>
+              </>
+            ) : variable && !variant ? (
+              <p>Select options to see price</p>
+            ) : (
+              <p>This option is not priced for your account.</p>
+            )}
+          </div>
 
-      <motion.div
-        className="sf-pdp-action"
-        initial={reduce ? false : "hidden"}
-        animate="show"
-        variants={fade}
-        transition={{ duration: duration.base, ease, delay: 0.62 }}
-      >
-        {showPrices && price && inStock && allowAddToCart && cartProductId ? (
-          <AddToCartForm
-            productId={cartProductId}
-            minOrderQuantity={product.minOrderQuantity}
-            next={`/products/${product.slug}`}
-            inStock={inStock}
-            availableQuantity={availableQuantity}
-          />
-        ) : !showPrices ? (
-          <ButtonLink href={requestHref}>Request a trade account</ButtonLink>
-        ) : allowAddToCart && variable && !variant ? (
-          <p>Select options before adding to cart.</p>
-        ) : allowAddToCart && !inStock ? (
-          <p>Currently unavailable</p>
-        ) : allowAddToCart && !cartProductId ? (
-          <p>This product cannot be added to the cart yet.</p>
+          <div className="sf-pdp-status" aria-label="Availability">
+            <span className={`sf-pdp-status-dot${inStock ? " is-on" : ""}`} aria-hidden />
+            <span>{stockLabel}</span>
+          </div>
+        </div>
+
+        <div className="sf-pdp-meta-grid">
+          {facts.map(([label, value]) => (
+            <div key={label}>
+              <span>{label}</span>
+              <b>{value}</b>
+            </div>
+          ))}
+        </div>
+
+        {variable ? (
+          <div className="sf-pdp-variants">
+            <VariantPicker product={product} selected={selected} onChange={setSelected} />
+          </div>
         ) : null}
-      </motion.div>
-    </motion.div>
-  );
-}
 
-function usePanelShift(reduce: boolean | null) {
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 0.18], [0, reduce ? 0 : -12]);
-  return reduce ? undefined : { y };
+        {notice ? <p className="sf-pdp-notice">{notice}</p> : null}
+        {error ? <p className="error">{error}</p> : null}
+
+        <div className="sf-pdp-action">
+          {showPrices && price && inStock && allowAddToCart && cartProductId ? (
+            <AddToCartForm
+              productId={cartProductId}
+              minOrderQuantity={product.minOrderQuantity}
+              next={`/products/${product.slug}`}
+              inStock={inStock}
+              availableQuantity={availableQuantity}
+            />
+          ) : !showPrices ? (
+            <ButtonLink href={requestHref}>Request a trade account</ButtonLink>
+          ) : allowAddToCart && variable && !variant ? (
+            <p className="sf-pdp-hint">Select options before adding to cart.</p>
+          ) : allowAddToCart && !inStock ? (
+            <p className="sf-pdp-hint">Currently unavailable</p>
+          ) : allowAddToCart && !cartProductId ? (
+            <p className="sf-pdp-hint">This product cannot be added to the cart yet.</p>
+          ) : null}
+        </div>
+      </div>
+    </motion.aside>
+  );
 }

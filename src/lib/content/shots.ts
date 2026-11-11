@@ -10,6 +10,8 @@ export const SHOT = {
   hands: "https://images.unsplash.com/photo-1466637574441-749b8f19452f?auto=format&fit=crop&w=1800&q=80",
   citrus: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?auto=format&fit=crop&w=1600&q=80",
   citrusMacro: "https://images.unsplash.com/photo-1547514701-42782101795e?auto=format&fit=crop&w=2200&q=80",
+  /** Wide fruit orchard (apple trees in rows) — products catalog hero */
+  orchard: "https://images.unsplash.com/photo-1739294524825-2e91da9d3f18?auto=format&fit=crop&w=2200&q=80",
   avocado: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&w=1600&q=80",
   apple: "https://images.unsplash.com/photo-1560806889-67de0c3d4ed7?auto=format&fit=crop&w=1600&q=80",
   greenApple: "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?auto=format&fit=crop&w=1600&q=80",
@@ -19,7 +21,7 @@ export const SHOT = {
   strawberry: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?auto=format&fit=crop&w=1600&q=80",
   blueberry: "https://images.unsplash.com/photo-1498557850523-fd3d1186ec31?auto=format&fit=crop&w=1600&q=80",
   grapes: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=1600&q=80",
-  mango: "https://images.unsplash.com/photo-1553279768-865429faaa3f?auto=format&fit=crop&w=1600&q=80",
+  mango: "https://images.unsplash.com/photo-1577234286642-fc512a5f8f11?auto=format&fit=crop&w=1600&q=80",
   pineapple: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=1600&q=80",
   kiwi: "https://images.unsplash.com/photo-1585059895524-c81990c49fba?auto=format&fit=crop&w=1600&q=80",
   coconut: "https://images.unsplash.com/photo-1580982268783-56860c4b26c2?auto=format&fit=crop&w=1600&q=80",
@@ -30,7 +32,7 @@ export const SHOT = {
   melon: "https://images.unsplash.com/photo-1571575173700-afb9492e6a50?auto=format&fit=crop&w=1600&q=80",
   dates: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&w=1600&q=80",
   fig: "https://images.unsplash.com/photo-1601379760883-1bb497c558e0?auto=format&fit=crop&w=1600&q=80",
-  pomegranate: "https://images.unsplash.com/photo-1615485500704-8e990659ee7a?auto=format&fit=crop&w=1600&q=80",
+  pomegranate: "https://images.unsplash.com/photo-1546549039-49b1be5c0a0a?auto=format&fit=crop&w=1600&q=80",
   nuts: "https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?auto=format&fit=crop&w=1600&q=80",
 } as const;
 

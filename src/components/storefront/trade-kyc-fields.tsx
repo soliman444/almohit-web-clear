@@ -1,4 +1,5 @@
 import type { AppRole } from "../../lib/trade-kyc";
+import { LocationFields } from "./location-map-picker";
 
 const PAYMENT_LABEL: Record<string, string> = {
   bank_transfer: "Bank transfer",
@@ -166,6 +167,15 @@ export function TradeKycFields({
             <Field label="Notes" name="notes" defaultValue={defaults.notes} as="textarea" className="is-wide" readOnly={readOnly} invalid={bad("notes")} />
           </div>
         </section>
+            {role === "marketer" && (
+              <LocationFields
+                defaultCountryCode={defaults.countryCode}
+                defaultLatitude={defaults.latitude}
+                defaultLongitude={defaults.longitude}
+                readOnly={readOnly}
+                invalidCountry={bad("countryCode")}
+              />
+            )}
       </>
     );
   }

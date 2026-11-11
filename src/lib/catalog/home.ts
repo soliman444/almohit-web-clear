@@ -23,6 +23,7 @@ export function homeCatalogSlices(
 ) {
   const roots = categories.filter((category) => !category.parentId);
   const featured = products.filter((product) => product.isFeatured);
+  const favorites = products.filter((product) => product.isFavorite);
   const newest = products.filter((product) => product.isNew);
   const inStock = products.filter((product) => product.inStock);
   const brands = [...new Map(
@@ -64,8 +65,10 @@ export function homeCatalogSlices(
     roots,
     brands,
     collections,
+    favorites: favorites.slice(0, 8),
     bestSellers: (featured.length ? featured : inStock.length ? inStock : products).slice(0, 8),
-    newArrivals: (newest.length ? newest : [...products].reverse()).slice(0, 8),
+    // Prefer isNew flags when present; otherwise keep API newest order (do not reverse).
+    newArrivals: (newest.length ? newest : products).slice(0, 4),
     offerProducts,
     promos,
     categoryRails,

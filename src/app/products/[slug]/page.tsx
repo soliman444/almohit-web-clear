@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { ProductFacts } from "../../../components/storefront/product-facts";
 import { ProductDetailMedia } from "../../../components/storefront/product-detail-media";
+import { ProductFacts } from "../../../components/storefront/product-facts";
 import { ProductSpecs } from "../../../components/storefront/product-specs";
 import { ProductStoryBlock } from "../../../components/storefront/product-story-block";
 import { RelatedProductsSection } from "../../../components/storefront/related-products-section";

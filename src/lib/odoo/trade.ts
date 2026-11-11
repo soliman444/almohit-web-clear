@@ -15,6 +15,9 @@ export type TradeApplication = {
   phone: string | null;
   street: string | null;
   city: string | null;
+  countryCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
   managerName: string | null;
   employeeName: string | null;
   bankAccount: string | null;
@@ -37,6 +40,9 @@ export type OdooTradeApplicationPayload = {
   phone?: string | null;
   street?: string | null;
   city?: string | null;
+  country_code?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   manager_name?: string | null;
   employee_name?: string | null;
   bank_account?: string | null;
@@ -57,6 +63,9 @@ export type SubmitTradeApplicationInput = {
   phone?: string;
   street?: string;
   city?: string;
+  countryCode?: string;
+  latitude?: number;
+  longitude?: number;
   managerName?: string;
   employeeName?: string;
   bankAccount?: string;
@@ -79,6 +88,9 @@ export function mapTradeApplication(payload: OdooTradeApplicationPayload): Trade
     phone: payload.phone ?? null,
     street: payload.street ?? null,
     city: payload.city ?? null,
+    countryCode: payload.country_code ?? null,
+    latitude: typeof payload.latitude === "number" ? payload.latitude : null,
+    longitude: typeof payload.longitude === "number" ? payload.longitude : null,
     managerName: payload.manager_name ?? null,
     employeeName: payload.employee_name ?? null,
     bankAccount: payload.bank_account ?? null,
@@ -103,6 +115,9 @@ export function odooTradeApplicationBody(input: SubmitTradeApplicationInput) {
     ...(input.phone ? { phone: input.phone } : {}),
     ...(input.street ? { street: input.street } : {}),
     ...(input.city ? { city: input.city } : {}),
+    ...(input.countryCode ? { country_code: input.countryCode } : {}),
+    ...(input.latitude !== undefined ? { latitude: input.latitude } : {}),
+    ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
     ...(input.managerName ? { manager_name: input.managerName } : {}),
     ...(input.employeeName ? { employee_name: input.employeeName } : {}),
     ...(input.bankAccount ? { bank_account: input.bankAccount } : {}),

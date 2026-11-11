@@ -7,10 +7,10 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "im
 /** Prefer sharper Odoo image fields for Retina cards/PDP without changing the backend contract. */
 function upgradeOdooImagePath(pathname: string): string {
   return pathname
-    .replace(/\/image_128(?=\/|$)/g, "/image_512")
+    .replace(/\/image_128(?=\/|$)/g, "/image_1024")
     .replace(/\/image_256(?=\/|$)/g, "/image_1024")
     .replace(/\/image_512(?=\/|$)/g, "/image_1024")
-    .replace(/\/image_variant_128(?=\/|$)/g, "/image_variant_512")
+    .replace(/\/image_variant_128(?=\/|$)/g, "/image_variant_1024")
     .replace(/\/image_variant_256(?=\/|$)/g, "/image_variant_1024")
     .replace(/\/image_variant_512(?=\/|$)/g, "/image_variant_1024");
 }

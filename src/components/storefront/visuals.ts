@@ -12,6 +12,7 @@ export const EDITORIAL = {
   hands: SHOT.hands,
   linen: SHOT.comb,
   produce: SHOT.hands,
+  orchard: SHOT.orchard,
 } as const;
 
 const FALLBACKS = [SHOT.oil, SHOT.spice, SHOT.coffee, SHOT.night, SHOT.comb, SHOT.hands];

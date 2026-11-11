@@ -74,8 +74,7 @@ export async function loginAction(formData: FormData) {
   if (!email || !password) redirect("/login?error=invalid");
 
   try {
-    const session = await loginCustomer({ email, password });
-    if (session.isStaff) redirect("/");
+    await loginCustomer({ email, password });
   } catch (error) {
     if (isOdooAuthError(error, "INVALID_CREDENTIALS") || (error instanceof ApiClientError && error.status === 401)) {
       redirect("/login?error=invalid");
@@ -84,12 +83,12 @@ export async function loginAction(formData: FormData) {
     throw error;
   }
 
-  redirect("/account");
+  redirect("/");
 }
 
 export async function logoutAction() {
   await logoutCurrentCustomer();
-  redirect("/");
+  redirect("/login");
 }
 
 export async function submitBusinessRequestAction(formData: FormData) {

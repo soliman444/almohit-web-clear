@@ -104,21 +104,27 @@ export function MediaFrame({
           <em>Image unavailable</em>
         </span>
       ) : (
-        <Image
-          src={resolved}
-          alt={alt}
-          fill
-          sizes={sizes}
-          quality={90}
-          className="sf-photo"
-          priority={priority}
-          unoptimized={resolved.startsWith("http") && !isKnownRemote(resolved)}
-          onError={() => {
-            setBroken(true);
-            onStatus?.("error");
-          }}
-          onLoad={() => onStatus?.("ready")}
-        />
+        <span className="sf-media-frame">
+          <Image
+            src={resolved}
+            alt={alt}
+            fill
+            sizes={sizes}
+            quality={90}
+            className="sf-photo"
+            priority={priority}
+            unoptimized={resolved.startsWith("http") && !isKnownRemote(resolved)}
+            style={{
+              objectFit: presentation.fit,
+              objectPosition: `${presentation.focalX}% ${presentation.focalY}%`,
+            }}
+            onError={() => {
+              setBroken(true);
+              onStatus?.("error");
+            }}
+            onLoad={() => onStatus?.("ready")}
+          />
+        </span>
       )}
     </span>
   );

@@ -2,98 +2,119 @@
 
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
-import { stagger } from "../../lib/motion";
+
+import { duration, ease, stagger } from "../../lib/motion";
 import { BRAND } from "../../lib/brand";
 import { BrandLogo } from "./brand-logo";
 import { ButtonLink } from "./button-link";
-import { HeroVideo } from "./hero-video";
 
 type Collection = { index: string; name: string; href: string };
 
-const TITLE = ["Fruit season", "starts here"] as const;
+const TITLE = ["Cases ready", "for your shelves."] as const;
 
 export function CinematicHero({
-  collections,
-  image,
-  focalX,
-  focalY,
-  frameScale,
+  collections: _collections,
 }: {
   collections: Collection[];
+  /** Kept for call-site compatibility; stage hero does not use video framing. */
   image?: string | null;
   focalX?: number | null;
   focalY?: number | null;
   frameScale?: number | null;
 }) {
+  void _collections;
   const reduceMotion = useReducedMotion();
   const [ready, setReady] = useState(false);
+  const [compact, setCompact] = useState(false);
   const { scrollY } = useScroll();
-  const imageY = useTransform(scrollY, [0, 700], [0, 80]);
-  const imageScale = useTransform(scrollY, [0, 700], [1.06, 1.14]);
+  const stageY = useTransform(scrollY, [0, 640], [0, 48]);
+  const stageScale = useTransform(scrollY, [0, 640], [1, 1.06]);
+  const orbY = useTransform(scrollY, [0, 640], [0, -36]);
 
   useEffect(() => {
     setReady(true);
+    const media = window.matchMedia("(max-width: 900px)");
+    const sync = () => setCompact(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
   }, []);
 
-  const reduce = ready && Boolean(reduceMotion);
+  const reduce = ready && (Boolean(reduceMotion) || compact);
 
   return (
-    <section className="sf-hero">
-      <link rel="preload" as="video" href="/heroes/fresh-produce.mp4?v=10433" type="video/mp4" />
-      <motion.div
-        className="sf-hero-main"
-        style={ready && !reduce ? { y: imageY, scale: imageScale } : undefined}
-      >
-        <HeroVideo
-          src="/heroes/fresh-produce.mp4?v=10433"
-          poster={image ?? undefined}
-          alt="Catalog opening"
-          preset="campaign"
-          categorySlug="fresh-produce"
-          focalX={focalX}
-          focalY={focalY}
-          scale={frameScale}
+    <section className="sf-hero is-stage" aria-label={`${BRAND.name} wholesale hero`}>
+      <div className="sf-hero-atmosphere" aria-hidden>
+        <motion.span
+          className="sf-hero-orb is-mango"
+          style={ready && !reduce ? { y: orbY } : undefined}
         />
+        <span className="sf-hero-orb is-leaf" />
+        <span className="sf-hero-grain" />
+      </div>
+
+      <motion.div
+        className="sf-hero-stage"
+        style={ready && !reduce ? { y: stageY, scale: stageScale } : undefined}
+      >
+        <motion.div
+          className="sf-hero-mark"
+          initial={reduce ? false : { opacity: 0, scale: 0.94, y: 22 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: duration.cinematic, ease }}
+        >
+          <div className="sf-hero-plate">
+            <BrandLogo href="/" variant="hero" priority />
+          </div>
+        </motion.div>
+        <p className="sf-hero-stage-caption">{BRAND.nameAr}</p>
       </motion.div>
-      <div className="sf-hero-shade" aria-hidden />
 
       <div className="sf-hero-copy">
-        <div className="sf-hero-brand">
-          <BrandLogo href="" variant="hero" priority />
-        </div>
-        <div className="sf-pills">
-          <span className="sf-pill">Featured catalog</span>
-          <span className="sf-pill">Trade after approval</span>
-        </div>
+        <motion.p
+          className="sf-hero-brand-word"
+          initial={reduce ? false : { opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: duration.reveal, ease, delay: 0.08 }}
+        >
+          {BRAND.name}
+        </motion.p>
+
         <h1 className="sf-hero-title">
           {TITLE.map((line, index) => (
             <span className="sf-clip" key={line}>
               <span
                 className="sf-line"
-                style={{ animationDelay: `${0.12 + index * stagger.display}s` }}
+                style={
+                  reduce
+                    ? undefined
+                    : { animationDelay: `${0.16 + index * stagger.display}s` }
+                }
               >
-                {line.split(" ").map((word, wordIndex, words) => (
-                  <span className="sf-word" key={word}>
-                    {word}
-                    {wordIndex < words.length - 1 ? " " : ""}
-                  </span>
-                ))}
+                {line}
               </span>
             </span>
           ))}
         </h1>
-        <div className="sf-hero-meta">
-          <div className="sf-hero-credits">
-            <span>{BRAND.shortName}</span>
-            {collections.slice(0, 2).map((item) => (
-              <a key={item.href} href={item.href}>{item.name}</a>
-            ))}
-          </div>
-          <div className="sf-hero-cta">
-            <ButtonLink href="/products" plain>Browse the collection</ButtonLink>
-            <ButtonLink href="/register" ghost plain>Request a trade account</ButtonLink>
-          </div>
-        </div>
+
+        <motion.p
+          className="sf-hero-support"
+          initial={reduce ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: duration.base, ease, delay: 0.3 }}
+        >
+          Clear MOQ, live stock, and trade pricing after approval — built for shops that buy by the case.
+        </motion.p>
+
+        <motion.div
+          className="sf-hero-cta"
+          initial={reduce ? false : { opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: duration.base, ease, delay: 0.4 }}
+        >
+          <ButtonLink href="/#catalog" plain>Shop newest arrivals</ButtonLink>
+          <ButtonLink href="/#discover" ghost plain>Browse categories</ButtonLink>
+        </motion.div>
       </div>
     </section>
   );
