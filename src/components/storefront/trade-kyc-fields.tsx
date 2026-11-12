@@ -21,8 +21,8 @@ export type TradeKycDefaults = {
   notes?: string;
   shopImageUrl?: string | null;
   countryCode?: string;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 function shown(value?: string | null) {
