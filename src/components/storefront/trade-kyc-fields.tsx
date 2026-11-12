@@ -20,6 +20,9 @@ export type TradeKycDefaults = {
   paymentMethod?: string;
   notes?: string;
   shopImageUrl?: string | null;
+  countryCode?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 function shown(value?: string | null) {
