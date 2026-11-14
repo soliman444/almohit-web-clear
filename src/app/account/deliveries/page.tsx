@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { StorefrontShell } from "../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../components/system/storefront-unavailable";
 import { safeApiCall } from "../../../lib/odoo/safe";
 import { listOdooDeliveries } from "../../../lib/odoo/deliveries";
@@ -34,8 +33,7 @@ export default async function DeliveriesPage({
   const deliveries = loaded.data;
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-delivery-page">
+    <main className="sf-account sf-delivery-page">
         <Link className="sf-text-link" href="/account">Back to my account</Link>
         <p className="sf-kicker">Deliveries</p>
         <h1>Assigned deliveries.</h1>
@@ -78,6 +76,5 @@ export default async function DeliveriesPage({
           </div>
         )}
       </main>
-    </StorefrontShell>
   );
 }

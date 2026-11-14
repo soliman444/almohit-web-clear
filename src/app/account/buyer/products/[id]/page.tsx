@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { StorefrontShell } from "../../../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import { ApiClientError } from "../../../../../lib/odoo/errors";
 import { getBuyerProduct } from "../../../../../lib/odoo/buyer";
@@ -26,8 +25,7 @@ export default async function BuyerProductDetailPage({
   const product = loaded.data;
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page">
+    <main className="sf-account sf-invoice-page">
         <Link className="sf-text-link" href="/account/buyer/products">All products</Link>
         <p className="sf-kicker">Product</p>
         <h1>{product.name}</h1>
@@ -62,7 +60,6 @@ export default async function BuyerProductDetailPage({
           </Link>
         </p>
       </main>
-    </StorefrontShell>
   );
 }
 

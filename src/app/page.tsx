@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { CatalogPager } from "../components/storefront/catalog-pager";
 import { CinematicHero } from "../components/storefront/cinematic-hero";
@@ -25,7 +24,6 @@ import {
 } from "../lib/catalog/filters";
 import { homeCatalogSlices } from "../lib/catalog/home";
 import { fetchStorefrontProducts } from "../lib/catalog/products";
-import { hasOdooSession } from "../lib/odoo/auth";
 import { listOdooBrands } from "../lib/odoo/catalog";
 import { safeApiCall } from "../lib/odoo/safe";
 
@@ -36,8 +34,6 @@ export default async function HomePage({
 }: {
   searchParams: Promise<FinderQuery>;
 }) {
-  if (!(await hasOdooSession())) redirect("/login");
-
   const query = await searchParams;
   const term = query.q?.trim();
   const page = parseCatalogPage(query.page);

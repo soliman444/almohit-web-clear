@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { FormErrorBanner } from "../../../../../components/storefront/form-error-banner";
 import { OnceForm, OnceSubmit } from "../../../../../components/storefront/once-submit";
-import { StorefrontShell } from "../../../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import { createBuyerProductAction } from "../../../../../lib/actions/buyer";
 import { fieldClassName, parseBuyerFormError, type FormErrorQuery } from "../../../../../lib/form-errors";
@@ -24,8 +23,7 @@ export default async function NewBuyerProductPage({
   const uoms = loaded.data;
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page">
+    <main className="sf-account sf-invoice-page">
         <Link className="sf-text-link" href="/account/buyer/products">Back to products</Link>
         <p className="sf-kicker">Buyer</p>
         <h1>New procurement product.</h1>
@@ -75,6 +73,5 @@ export default async function NewBuyerProductPage({
           <OnceSubmit className="sf-btn" pendingLabel="Saving…"><span>Create product</span></OnceSubmit>
         </OnceForm>
       </main>
-    </StorefrontShell>
   );
 }

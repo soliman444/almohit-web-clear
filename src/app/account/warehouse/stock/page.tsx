@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { StorefrontShell } from "../../../../components/storefront/shell";
 import { WarehouseUnassigned } from "../../../../components/storefront/warehouse-unassigned";
 import { StorefrontUnavailable } from "../../../../components/system/storefront-unavailable";
 import { getMyWarehouses, listWarehouseStock } from "../../../../lib/odoo/warehouse";
@@ -34,8 +33,7 @@ export default async function WarehouseStockPage({
   const { access, stock } = loaded.data;
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page sf-wh-page">
+    <main className="sf-account sf-invoice-page sf-wh-page">
         <Link className="sf-text-link" href="/account/warehouse">Warehouse desk</Link>
         <p className="sf-kicker">Stock</p>
         <h1>On-hand stock.</h1>
@@ -119,6 +117,5 @@ export default async function WarehouseStockPage({
           </div>
         )}
       </main>
-    </StorefrontShell>
   );
 }

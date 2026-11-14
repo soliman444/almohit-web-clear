@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { LocationFields } from "../../../../components/storefront/location-map-picker";
 import { OnceForm, OnceSubmit } from "../../../../components/storefront/once-submit";
-import { StorefrontShell } from "../../../../components/storefront/shell";
 import { createMarketerMerchantAction } from "../../../../lib/actions/marketer";
 import { requireMarketer } from "../../../../lib/session/access";
 
@@ -29,8 +28,7 @@ export default async function NewMerchantPage({
               : null;
 
   return (
-    <StorefrontShell>
-      <main className="sf-business-page">
+    <main className="sf-business-page">
         <header className="sf-biz-hero">
           <div className="sf-biz-hero-top">
             <Link className="sf-biz-back" href="/account/merchants">Back to my merchants</Link>
@@ -92,6 +90,5 @@ export default async function NewMerchantPage({
           </div>
         </OnceForm>
       </main>
-    </StorefrontShell>
   );
 }

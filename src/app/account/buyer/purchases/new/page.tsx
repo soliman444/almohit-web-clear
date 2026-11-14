@@ -2,7 +2,6 @@ import Link from "next/link";
 import { BuyerPurchaseLines } from "../../../../../components/storefront/buyer-purchase-lines";
 import { FormErrorBanner } from "../../../../../components/storefront/form-error-banner";
 import { OnceForm, OnceSubmit } from "../../../../../components/storefront/once-submit";
-import { StorefrontShell } from "../../../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import { createBuyerPurchaseAction } from "../../../../../lib/actions/buyer";
 import { getOdooCurrencyCatalog } from "../../../../../lib/currency/catalog";
@@ -54,8 +53,7 @@ export default async function NewBuyerPurchasePage({
   const { suppliers, products, currencies, defaultCurrencyId } = loaded.data;
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page">
+    <main className="sf-account sf-invoice-page">
         <Link className="sf-text-link" href="/account/buyer/purchases">Back to purchases</Link>
         <p className="sf-kicker">Buyer</p>
         <h1>New purchase order.</h1>
@@ -123,6 +121,5 @@ export default async function NewBuyerPurchasePage({
           </OnceForm>
         )}
       </main>
-    </StorefrontShell>
   );
 }

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FormErrorBanner } from "../../../../../components/storefront/form-error-banner";
 import { OnceForm, OnceSubmit } from "../../../../../components/storefront/once-submit";
-import { StorefrontShell } from "../../../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import { updateBuyerSupplierAction } from "../../../../../lib/actions/buyer";
 import { fieldClassName, parseBuyerFormError, type FormErrorQuery } from "../../../../../lib/form-errors";
@@ -31,8 +30,7 @@ export default async function BuyerSupplierDetailPage({
   const supplier = loaded.data;
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page">
+    <main className="sf-account sf-invoice-page">
         <Link className="sf-text-link" href="/account/buyer/suppliers">All suppliers</Link>
         <p className="sf-kicker">Supplier</p>
         <h1>{supplier.name}</h1>
@@ -57,7 +55,6 @@ export default async function BuyerSupplierDetailPage({
           <OnceSubmit className="sf-btn" pendingLabel="Saving…"><span>Save supplier</span></OnceSubmit>
         </OnceForm>
       </main>
-    </StorefrontShell>
   );
 }
 

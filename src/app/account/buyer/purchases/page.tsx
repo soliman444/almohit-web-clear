@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { CatalogPager } from "../../../../components/storefront/catalog-pager";
-import { StorefrontShell } from "../../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../../components/system/storefront-unavailable";
 import {
   buyerPurchasesHref,
@@ -42,8 +41,7 @@ export default async function BuyerPurchasesPage({
   const filtered = Boolean(term || state || query.sort);
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page">
+    <main className="sf-account sf-invoice-page">
         <Link className="sf-text-link" href="/account/buyer">Back to procurement</Link>
         <p className="sf-kicker">Buyer</p>
         <h1>Purchase orders.</h1>
@@ -115,6 +113,5 @@ export default async function BuyerPurchasesPage({
           hrefForPage={(nextPage) => buyerPurchasesHref(query, { page: String(nextPage) })}
         />
       </main>
-    </StorefrontShell>
   );
 }

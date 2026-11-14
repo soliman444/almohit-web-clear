@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { FormErrorBanner } from "../../../../../components/storefront/form-error-banner";
 import { OnceForm, OnceSubmit } from "../../../../../components/storefront/once-submit";
-import { StorefrontShell } from "../../../../../components/storefront/shell";
 import { WarehouseUnassigned } from "../../../../../components/storefront/warehouse-unassigned";
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import { importWarehouseInventoryAction } from "../../../../../lib/actions/warehouse";
@@ -30,8 +29,7 @@ export default async function ImportWarehouseInventoryPage({
   const access = loaded.data;
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page sf-wh-page">
+    <main className="sf-account sf-invoice-page sf-wh-page">
         <Link className="sf-text-link" href="/account/warehouse/inventory">All sessions</Link>
         <p className="sf-kicker">Inventory</p>
         <h1>Import count.</h1>
@@ -79,6 +77,5 @@ export default async function ImportWarehouseInventoryPage({
           </OnceSubmit>
         </OnceForm>
       </main>
-    </StorefrontShell>
   );
 }

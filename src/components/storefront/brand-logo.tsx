@@ -9,11 +9,11 @@ export function BrandLogo({
   priority = false,
 }: {
   href?: string;
-  variant?: "header" | "menu" | "hero" | "footer";
+  variant?: "header" | "menu" | "hero" | "footer" | "auth";
   onClick?: () => void;
   priority?: boolean;
 }) {
-  const large = variant === "footer" || variant === "hero";
+  const large = variant === "footer" || variant === "hero" || variant === "auth";
   const mark = (
     <span className={`sf-brand-logo is-${variant}`}>
       <Image

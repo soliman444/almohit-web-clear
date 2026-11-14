@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AccountDashboard } from "../../components/storefront/account-dashboard";
 import { StorefrontShell } from "../../components/storefront/shell";
-import { logoutAction } from "../../lib/actions/auth";
 import { StorefrontUnavailable } from "../../components/system/storefront-unavailable";
+import { logoutAction } from "../../lib/actions/auth";
+import {
+  accountDashboardLinks,
+  asAccountRole,
+  labelAccountRole,
+  labelTradeStatus,
+  usesAccountDesk,
+} from "../../lib/account/role-nav";
 import { safeApiCall } from "../../lib/odoo/safe";
 import { redirectIfStaff } from "../../lib/session/access";
-
-function labelTradeStatus(state: string) {
-  return state ? `${state.charAt(0).toUpperCase()}${state.slice(1)}` : state;
-}
 
 export default async function AccountPage() {
   await redirectIfStaff();
@@ -23,53 +27,45 @@ export default async function AccountPage() {
   if (!loaded.ok) return <StorefrontUnavailable />;
   if (!loaded.data?.customer) redirect("/login");
   const { me, customer } = loaded.data;
+  const role = asAccountRole(customer.role);
+
+  if (usesAccountDesk(role)) {
+    return (
+      <AccountDashboard
+        name={me.user.name}
+        email={me.user.email ?? ""}
+        role={role}
+        tradeStatus={customer.state}
+      />
+    );
+  }
+
+  const links = accountDashboardLinks(role, customer.state);
+  const statusLabel = labelTradeStatus(customer.state);
+
   return (
     <StorefrontShell>
-      <main className="sf-account">
-        <p className="sf-kicker">{labelTradeStatus(customer.state)}</p>
+      <main className="sf-account sf-account-dash is-merchant">
+        <p className="sf-kicker">{statusLabel}</p>
         <h1>Hello {me.user.name}</h1>
         <p className="sf-count">{me.user.email}</p>
-        <p>Role: {
-          customer.role === "buyer" ? "Buyer"
-            : customer.role === "distributor" ? "Distributor"
-              : customer.role === "marketer" ? "Marketer"
-                : customer.role === "warehouse_manager" ? "Warehouse manager"
-                  : "Merchant"
-        }</p>
-        <p>Trade status: {labelTradeStatus(customer.state)}</p>
-        {customer.role === "distributor" && (
-          <Link className="sf-btn" href="/account/deliveries"><span>Deliveries</span><span className="sf-arrow" aria-hidden>→</span></Link>
-        )}
-        {customer.role === "marketer" && (
-          <Link className="sf-btn" href="/account/merchants"><span>My merchants</span><span className="sf-arrow" aria-hidden>→</span></Link>
-        )}
-        {customer.role === "buyer" && (
-          <>
-            <Link className="sf-btn" href="/account/buyer"><span>Procurement</span><span className="sf-arrow" aria-hidden>→</span></Link>
-            <Link className="sf-btn is-subtle" href="/account/buyer/suppliers"><span>Suppliers</span></Link>
-            <Link className="sf-btn is-subtle" href="/account/buyer/purchases"><span>Purchases</span></Link>
-            <Link className="sf-btn is-subtle" href="/account/buyer/receipts"><span>Receipts</span></Link>
-          </>
-        )}
-        {customer.role === "warehouse_manager" && (
-          <>
-            <Link className="sf-btn" href="/account/warehouse"><span>Warehouse desk</span><span className="sf-arrow" aria-hidden>→</span></Link>
-            <Link className="sf-btn is-subtle" href="/account/warehouse/stock"><span>Stock</span></Link>
-            <Link className="sf-btn is-subtle" href="/account/warehouse/receipts"><span>Receipts</span></Link>
-            <Link className="sf-btn is-subtle" href="/account/warehouse/issues"><span>Issues</span></Link>
-          </>
-        )}
-        <Link className="sf-btn" href="/account/business"><span>Trade account</span><span className="sf-arrow" aria-hidden>→</span></Link>
-        {customer.role === "merchant" && (
-          <>
-            <Link className="sf-btn is-subtle" href="/account/orders"><span>Orders</span></Link>
-            <Link className="sf-btn is-subtle" href="/account/invoices"><span>Invoices</span></Link>
-            <Link className="sf-btn is-subtle" href="/account/payments"><span>Payments</span></Link>
-            <Link className="sf-btn is-subtle" href="/account/addresses"><span>Addresses</span></Link>
-            <Link className="sf-btn is-subtle" href="/cart"><span>Cart</span></Link>
-          </>
-        )}
-        <form action={logoutAction}><button className="sf-btn is-subtle" type="submit"><span>Sign out</span></button></form>
+        <p>Role: {labelAccountRole(role)}</p>
+        <p>Trade status: {statusLabel}</p>
+        {links.filter((item) => item.href !== "/account").map((item) => (
+          <Link
+            key={item.href}
+            className={item.primary ? "sf-btn" : "sf-btn is-subtle"}
+            href={item.href}
+          >
+            <span>{item.label}</span>
+            {item.primary ? <span className="sf-arrow" aria-hidden>→</span> : null}
+          </Link>
+        ))}
+        <form action={logoutAction}>
+          <button className="sf-btn is-subtle" type="submit">
+            <span>Sign out</span>
+          </button>
+        </form>
       </main>
     </StorefrontShell>
   );

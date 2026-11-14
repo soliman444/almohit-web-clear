@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { StorefrontShell } from "../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../components/system/storefront-unavailable";
 import { safeApiCall } from "../../../lib/odoo/safe";
 import { listMarketerMerchants } from "../../../lib/odoo/marketer";
@@ -19,8 +18,7 @@ export default async function MarketerMerchantsPage({
   const merchants = loaded.data;
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-delivery-page">
+    <main className="sf-account sf-delivery-page">
         <Link className="sf-text-link" href="/account">Back to my account</Link>
         <p className="sf-kicker">Marketer</p>
         <h1>My merchants.</h1>
@@ -52,6 +50,5 @@ export default async function MarketerMerchantsPage({
           </div>
         )}
       </main>
-    </StorefrontShell>
   );
 }

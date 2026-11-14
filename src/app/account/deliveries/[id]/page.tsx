@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OnceForm, OnceSubmit } from "../../../../components/storefront/once-submit";
-import { StorefrontShell } from "../../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../../components/system/storefront-unavailable";
 import { ApiClientError } from "../../../../lib/odoo/errors";
 import { safeApiCall } from "../../../../lib/odoo/safe";
@@ -58,8 +57,7 @@ export default async function DeliveryDetailPage({
   const canDeliver = delivery.allowedActions.includes("delivered");
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-delivery-page">
+    <main className="sf-account sf-delivery-page">
         <Link className="sf-text-link" href="/account/deliveries">All deliveries</Link>
         <p className="sf-kicker">Delivery</p>
         <h1>{delivery.name}</h1>
@@ -173,7 +171,6 @@ export default async function DeliveryDetailPage({
           )}
         </section>
       </main>
-    </StorefrontShell>
   );
 }
 

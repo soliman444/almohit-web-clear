@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FormErrorBanner } from "../../../../../components/storefront/form-error-banner";
 import { OnceForm, OnceSubmit } from "../../../../../components/storefront/once-submit";
-import { StorefrontShell } from "../../../../../components/storefront/shell";
 import { WarehouseUnassigned } from "../../../../../components/storefront/warehouse-unassigned";
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import {
@@ -63,8 +62,7 @@ export default async function WarehouseTransferDetailPage({
   const canCancel = transfer.state === "requested";
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page sf-wh-page">
+    <main className="sf-account sf-invoice-page sf-wh-page">
         <Link className="sf-text-link" href="/account/warehouse/transfers">All transfers</Link>
         <p className="sf-kicker">Transfer</p>
         <h1>{transfer.name}</h1>
@@ -207,6 +205,5 @@ export default async function WarehouseTransferDetailPage({
           </OnceForm>
         )}
       </main>
-    </StorefrontShell>
   );
 }

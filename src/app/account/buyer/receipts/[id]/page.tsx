@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { StorefrontShell } from "../../../../../components/storefront/shell";
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import { ApiClientError } from "../../../../../lib/odoo/errors";
 import { getBuyerReceipt } from "../../../../../lib/odoo/buyer";
@@ -26,8 +25,7 @@ export default async function BuyerReceiptDetailPage({
   const receipt = loaded.data;
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page">
+    <main className="sf-account sf-invoice-page">
         <Link className="sf-text-link" href="/account/buyer/receipts">All receipts</Link>
         <p className="sf-kicker">Receipt</p>
         <h1>{receipt.name}</h1>
@@ -105,7 +103,6 @@ export default async function BuyerReceiptDetailPage({
           </section>
         )}
       </main>
-    </StorefrontShell>
   );
 }
 

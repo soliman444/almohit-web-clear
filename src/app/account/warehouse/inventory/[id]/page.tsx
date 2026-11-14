@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FormErrorBanner } from "../../../../../components/storefront/form-error-banner";
 import { OnceForm, OnceSubmit } from "../../../../../components/storefront/once-submit";
-import { StorefrontShell } from "../../../../../components/storefront/shell";
 import { WarehouseUnassigned } from "../../../../../components/storefront/warehouse-unassigned";
 import { StorefrontUnavailable } from "../../../../../components/system/storefront-unavailable";
 import { approveWarehouseInventoryAction } from "../../../../../lib/actions/warehouse";
@@ -54,8 +53,7 @@ export default async function WarehouseInventoryDetailPage({
   const canApprove = session.state === "draft";
 
   return (
-    <StorefrontShell>
-      <main className="sf-account sf-invoice-page sf-wh-page">
+    <main className="sf-account sf-invoice-page sf-wh-page">
         <Link className="sf-text-link" href="/account/warehouse/inventory">All sessions</Link>
         <p className="sf-kicker">Inventory</p>
         <h1>{session.name}</h1>
@@ -121,6 +119,5 @@ export default async function WarehouseInventoryDetailPage({
           </OnceForm>
         )}
       </main>
-    </StorefrontShell>
   );
 }

@@ -5,6 +5,7 @@ import { OnceForm, OnceSubmit } from "../../../components/storefront/once-submit
 import { StorefrontShell } from "../../../components/storefront/shell";
 import { TradeKycFields } from "../../../components/storefront/trade-kyc-fields";
 import { submitBusinessRequestAction } from "../../../lib/actions/auth";
+import { asAccountRole, usesAccountDesk } from "../../../lib/account/role-nav";
 import { parseAppRole } from "../../../lib/trade-kyc";
 import { StorefrontUnavailable } from "../../../components/system/storefront-unavailable";
 import { getCurrentCustomer, getCurrentCustomerSession } from "../../../lib/session/customer";
@@ -116,51 +117,55 @@ export default async function BusinessPage({
     longitude: application?.longitude,
   };
 
-  return (
-    <StorefrontShell>
-      <main className="sf-business-page">
-        <header className="sf-biz-hero">
-          <div className="sf-biz-hero-top">
+  const desk = usesAccountDesk(asAccountRole(customer.role));
+  const body = (
+    <main className="sf-business-page">
+      <header className="sf-biz-hero">
+        <div className="sf-biz-hero-top">
+          {!desk ? (
             <Link className="sf-biz-back" href="/account">Back to my account</Link>
-            {requestStatus && (
-              <p className={`sf-biz-status ${statusClass}`}>
-                {requestStatus.charAt(0).toUpperCase() + requestStatus.slice(1)}{rejectionReason ? ` — ${rejectionReason}` : ""}
-              </p>
-            )}
-          </div>
-          <div className="sf-biz-hero-copy">
-            <p className="sf-kicker">{copy.kicker}</p>
-            <h1>{copy.title}</h1>
-            <p className="sf-count">{copy.intro}</p>
-          </div>
-        </header>
-        <div className="sf-biz-error">
-          <FormErrorBanner
-            error={formError
-              ? {
-                  ...formError,
-                  message: formError.code === "kyc" && !query.detail ? copy.kyc : formError.message,
-                }
-              : null}
-          />
+          ) : <span />}
+          {requestStatus && (
+            <p className={`sf-biz-status ${statusClass}`}>
+              {requestStatus.charAt(0).toUpperCase() + requestStatus.slice(1)}{rejectionReason ? ` — ${rejectionReason}` : ""}
+            </p>
+          )}
         </div>
-        {locked ? (
+        <div className="sf-biz-hero-copy">
+          <p className="sf-kicker">{copy.kicker}</p>
+          <h1>{copy.title}</h1>
+          <p className="sf-count">{copy.intro}</p>
+        </div>
+      </header>
+      <div className="sf-biz-error">
+        <FormErrorBanner
+          error={formError
+            ? {
+                ...formError,
+                message: formError.code === "kyc" && !query.detail ? copy.kyc : formError.message,
+              }
+            : null}
+        />
+      </div>
+      {locked ? (
+        <div className="sf-biz-panel">
+          <TradeKycFields role={role} readOnly defaults={kycDefaults} />
+        </div>
+      ) : (
+        <OnceForm className="sf-business-form" action={submitBusinessRequestAction}>
           <div className="sf-biz-panel">
-            <TradeKycFields role={role} readOnly defaults={kycDefaults} />
-          </div>
-        ) : (
-          <OnceForm className="sf-business-form" action={submitBusinessRequestAction}>
-            <div className="sf-biz-panel">
-              <TradeKycFields role={role} defaults={kycDefaults} invalidFields={formError?.fields ?? []} />
-              <div className="sf-biz-actions">
-                <OnceSubmit className="sf-btn" pendingLabel="Submitting…">
-                  <span>{copy.submit}</span>
-                </OnceSubmit>
-              </div>
+            <TradeKycFields role={role} defaults={kycDefaults} invalidFields={formError?.fields ?? []} />
+            <div className="sf-biz-actions">
+              <OnceSubmit className="sf-btn" pendingLabel="Submitting…">
+                <span>{copy.submit}</span>
+              </OnceSubmit>
             </div>
-          </OnceForm>
-        )}
-      </main>
-    </StorefrontShell>
+          </div>
+        </OnceForm>
+      )}
+    </main>
   );
+
+  if (desk) return body;
+  return <StorefrontShell>{body}</StorefrontShell>;
 }
